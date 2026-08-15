@@ -19,3 +19,8 @@ yarn-error.log*
 .claude/
 agent/
 skills-lock.json
+
+# Source art. Blender files are large binaries and are not what the scene
+# loads — only exported .glb ever belongs in a Decentraland project.
+*.blend
+*.blend[0-9]*
