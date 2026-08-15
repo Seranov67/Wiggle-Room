@@ -1,4 +1,4 @@
-import { triggerEmote, stopEmote } from '~system/RestrictedActions'
+import { triggerEmote } from '~system/RestrictedActions'
 
 /**
  * The base emote set every Decentraland avatar owns — no wearables required,
@@ -33,9 +33,6 @@ export const EMOTES: Emote[] = [
   { id: 'tik', label: 'Tik', glyph: '🎵' }
 ]
 
-export const EMOTES_BY_ID: Record<string, Emote> = {}
-for (const e of EMOTES) EMOTES_BY_ID[e.id] = e
-
 /**
  * Fire an emote on the local avatar. Everyone else sees it through the normal
  * avatar comms channel, so we never have to replicate this ourselves.
@@ -43,11 +40,5 @@ for (const e of EMOTES) EMOTES_BY_ID[e.id] = e
 export function playEmote(id: string): void {
   triggerEmote({ predefinedEmote: id }).catch((err) => {
     console.log('[wiggle] emote failed', id, err)
-  })
-}
-
-export function clearEmote(): void {
-  stopEmote({}).catch(() => {
-    // Older explorers may not implement stopEmote; a stuck emote is harmless.
   })
 }

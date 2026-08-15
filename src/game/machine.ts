@@ -93,11 +93,19 @@ export function hostTick(dtSeconds: number): void {
 
   // A previous host left: adopt the match and restart the current phase clock
   // rather than inheriting an unknown amount of elapsed time.
+  //
+  // The token bump is what makes that honest. Without it the new host starts
+  // the phase over while every client keeps its old countdown, so the bar hits
+  // zero and then nothing happens for up to a full phase. Bumping it restarts
+  // everyone's clock together: the phase visibly begins again, which is the
+  // truth, instead of silently hanging.
   if (m.hostId.toLowerCase() !== myUserId().toLowerCase()) {
     const mut = Match.getMutable(entity)
     mut.hostId = myUserId()
+    mut.phaseToken = mut.phaseToken + 1
     hostElapsedMs = 0
-    hostKnownToken = m.phaseToken
+    actorGoneMs = 0
+    hostKnownToken = mut.phaseToken
     return
   }
 
@@ -431,11 +439,6 @@ export function localTick(dtSeconds: number): void {
     const options = optionIds()
     if (options.length > 0) commitChoice(options[Math.floor(Math.random() * options.length)])
   }
-}
-
-/** Milliseconds since this client observed the current phase begin. */
-export function phaseElapsedMs(): number {
-  return localElapsedMs
 }
 
 /** 0..1 of the current phase remaining, for the countdown bar. */

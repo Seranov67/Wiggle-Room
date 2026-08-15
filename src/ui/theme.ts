@@ -27,7 +27,10 @@ export function canvas(): { width: number; height: number; portrait: boolean; sc
   const width = info?.width ?? 1280
   const height = info?.height ?? 720
   const portrait = height > width
-  const touch = width < 900
+  // 1100, not 900: a tablet in landscape is 1024 wide and is emphatically a
+  // touch device. Being wrong on a small desktop window costs us a slightly
+  // chunky UI; being wrong on a tablet costs buttons too small to hit.
+  const touch = width < 1100
   const scale = Math.max(0.78, Math.min(1.35, width / 1280))
   return { width, height, portrait, scale, touch }
 }
@@ -48,8 +51,12 @@ export function px(base: number): number {
  * Height of a primary tap target. Apple/Google both put the comfortable
  * minimum around 44–48pt; we go bigger because players tap these while
  * watching an avatar dance.
+ *
+ * The floor is not decoration. Without it, crossing the touch threshold used
+ * to *shrink* the target — the smaller base met a still-clamped scale — so the
+ * devices most in need of a big button got the smallest one in the range.
  */
 export function tapHeight(): number {
   const { touch, scale } = canvas()
-  return Math.round((touch ? 76 : 64) * scale)
+  return Math.max(56, Math.round((touch ? 76 : 64) * scale))
 }

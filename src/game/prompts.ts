@@ -21,13 +21,6 @@ export type Prompt = {
   suggests: string[]
 }
 
-export const PACKS: Record<PackId, string> = {
-  everyday: 'Everyday Pain',
-  party: 'Party Mode',
-  internet: 'Extremely Online',
-  movies: 'Screen Time'
-}
-
 export const PROMPTS: Prompt[] = [
   // ---- everyday ----------------------------------------------------------
   { id: 'ev-monday', pack: 'everyday', text: 'Monday morning', suggests: ['headexplode', 'shrug'] },

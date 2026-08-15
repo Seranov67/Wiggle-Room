@@ -7,7 +7,7 @@ No typing, no voice required, no wearables to buy — just vibes.
 Built with Decentraland SDK7, mobile-first.
 
 > **Play it:** _TODO — deployed World URL_
-> **Source:** _TODO — public repository URL_
+> **Source:** https://github.com/Seranov67/Wiggle-Room
 
 ---
 
@@ -43,8 +43,9 @@ games ported there assume a keyboard. Wiggle Room is built the other way round:
   an emote — has no timing window at all.
 - **Everything lives in the bottom third.** The UI is one bottom sheet, because that's the
   only region a thumb reaches while the top of the screen shows the avatars.
-- **Big targets.** Primary buttons are 76pt on touch (Apple and Google both put the
-  comfortable minimum around 44–48). The emote grid is 4 columns on touch, 8 on desktop.
+- **Big targets.** Primary buttons land at 59pt on any touch-width screen — comfortably
+  above the 44–48pt minimum Apple and Google both recommend. The emote grid is 4 columns
+  on touch, 8 on desktop.
 - **One scale factor.** Type and spacing derive from a single canvas-width scale with a
   hard floor, so a 375pt phone and a 2560px monitor share one layout.
 - **Interactive in about a second.** The arena is built entirely from ECS primitives —

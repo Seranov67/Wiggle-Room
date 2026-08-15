@@ -148,19 +148,3 @@ export function Caption(props: { text: string; color?: Color4 }) {
     />
   )
 }
-
-/** Two-column grid; children are laid out by the caller in pairs. */
-export function Row(props: { children?: unknown; gap?: number }) {
-  return (
-    <UiEntity
-      uiTransform={{
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}
-    >
-      {props.children}
-    </UiEntity>
-  )
-}
