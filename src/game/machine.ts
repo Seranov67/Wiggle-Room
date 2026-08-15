@@ -26,6 +26,9 @@ let actorGoneMs = 0
 let rosterThinMs = 0
 /** How long a match from a newer build has been without its host in the room. */
 let orphanedMatchMs = 0
+/** How long we have been standing aside for a host who is here but not advancing. */
+let deferredToHostMs = 0
+let deferredToHostToken = -1
 
 /**
  * A hole in the roster — a missing actor, or a room that just dropped below
@@ -36,6 +39,13 @@ const ROSTER_GRACE_MS = 1_500
 
 /** How long a newer build's match must be hostless before we take it over. */
 const ORPHAN_GRACE_MS = 10_000
+
+/**
+ * How far past the end of a phase a present-but-silent host may go before
+ * someone else takes the match off them. Generous on purpose: a host who is
+ * merely slow should never lose the match, only one that has plainly stopped.
+ */
+const HOST_STALL_GRACE_MS = 15_000
 
 // ---------------------------------------------------------------------------
 // Client-side state
@@ -94,17 +104,22 @@ export function hostTick(dtSeconds: number): void {
   }
   orphanedMatchMs = 0
 
-  if (!isHost()) return
+  // Whoever the match says is driving it keeps driving it. The election only
+  // decides who *claims* a match nobody is running — it does not outrank a host
+  // that is alive and working, and treating it as though it did is how two
+  // clients end up trading the match back and forth.
+  if (m.hostId === '' || m.hostId.toLowerCase() !== myUserId().toLowerCase()) {
+    if (!takeOverFrom(m.hostId, m.phaseToken, m.phaseDurationMs, dtSeconds)) return
+    if (!isHost()) return
 
-  // A previous host left: adopt the match and restart the current phase clock
-  // rather than inheriting an unknown amount of elapsed time.
-  //
-  // The token bump is what makes that honest. Without it the new host starts
-  // the phase over while every client keeps its old countdown, so the bar hits
-  // zero and then nothing happens for up to a full phase. Bumping it restarts
-  // everyone's clock together: the phase visibly begins again, which is the
-  // truth, instead of silently hanging.
-  if (m.hostId.toLowerCase() !== myUserId().toLowerCase()) {
+    // Adopt, and restart the current phase clock rather than inheriting an
+    // unknown amount of elapsed time.
+    //
+    // The token bump is what makes that honest. Without it the new host starts
+    // the phase over while every client keeps its old countdown, so the bar
+    // hits zero and then nothing happens for up to a full phase. Bumping it
+    // restarts everyone's clock together: the phase visibly begins again,
+    // which is the truth, instead of silently hanging.
     const mut = Match.getMutable(entity)
     mut.hostId = myUserId()
     mut.phaseToken = mut.phaseToken + 1
@@ -113,6 +128,8 @@ export function hostTick(dtSeconds: number): void {
     hostKnownToken = mut.phaseToken
     return
   }
+  deferredToHostMs = 0
+  deferredToHostToken = -1
 
   if (hostKnownToken !== m.phaseToken) {
     hostKnownToken = m.phaseToken
@@ -244,6 +261,41 @@ function reconcileProtocol(theirProtocol: number, theirHostId: string, dtSeconds
   // still standing here. Take it over, once we are sure this is not a blip.
   orphanedMatchMs += dtSeconds * 1000
   if (orphanedMatchMs >= ORPHAN_GRACE_MS) resetToLobby()
+}
+
+/**
+ * May we take the match away from `hostId`?
+ *
+ * Yes once they have left the room. Yes, eventually, if they are still here but
+ * the phase has run well past its own duration — a client whose scene died
+ * leaves an avatar behind, and the match must not be stuck behind a corpse.
+ *
+ * No while they are here and the phase is still running to time. Two clients
+ * can both believe they are elected for a moment, each seeing a roster the
+ * other has not synced into yet, and since adopting bumps `phaseToken` that
+ * disagreement would reset everybody's countdown every frame — a worse fault
+ * than the frozen timer the bump was added to cure. The window closes as soon
+ * as the rosters agree, and only the elected client ever adopts, so this can
+ * never settle into two clients trading the match.
+ */
+function takeOverFrom(hostId: string, token: number, phaseDurationMs: number, dtSeconds: number): boolean {
+  if (!isPresent(hostId)) {
+    deferredToHostMs = 0
+    deferredToHostToken = -1
+    return true
+  }
+
+  if (deferredToHostToken !== token) {
+    deferredToHostToken = token
+    deferredToHostMs = 0
+  }
+  deferredToHostMs += dtSeconds * 1000
+
+  // The lobby has no duration of its own, so it gets the flat grace rather than
+  // being exempt. Handover there costs nothing — nothing is counting down — and
+  // exempting it would mean a host whose scene died while their avatar stayed
+  // put could keep the room from ever starting a match.
+  return deferredToHostMs > Math.max(0, phaseDurationMs) + HOST_STALL_GRACE_MS
 }
 
 /**
