@@ -469,8 +469,9 @@ function nameOf(userId: string): string {
 }
 
 /**
- * The actor's one line of instruction. Getting onto the stage is a hard gate on
- * the round starting, so it outranks anything else we could say here.
+ * The actor's one line of instruction. Getting onto the stage holds the round
+ * back for as long as the pick timer runs, so it outranks anything else we
+ * could say here — but it will not block a committed actor forever.
  */
 function pickCaption(onStage: boolean, hasPicked: boolean): string {
   if (onStage) return 'YOUR TURN — pick the one you can mime'
@@ -480,9 +481,15 @@ function pickCaption(onStage: boolean, hasPicked: boolean): string {
 /** Why the round died — the actor walking out and the actor going quiet look
  *  identical on the wire, so we tell them apart by who is still in the room. */
 function voidReason(actorId: string): string {
+  const players = roster()
+  // Checked first: when the room empties out, "the actor didn't choose" is not
+  // just unhelpful, it is wrong — the actor may be the one person left reading
+  // this, having picked a prompt perfectly well.
+  if (players.length < RULES.minPlayers) return 'not enough players to finish the round'
+
   const target = actorId.toLowerCase()
-  for (const p of roster()) {
-    if (p.userId.toLowerCase() === target) return 'the actor never took the stage'
+  for (const p of players) {
+    if (p.userId.toLowerCase() === target) return "the actor didn't choose a prompt"
   }
   return 'the actor left the room'
 }

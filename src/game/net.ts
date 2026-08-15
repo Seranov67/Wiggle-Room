@@ -87,6 +87,17 @@ function presentUserIds(): Set<string> {
   return present
 }
 
+/**
+ * Is this userId inside the scene right now, according to the renderer?
+ *
+ * Deliberately reads `PlayerIdentityData` rather than our own `Wiggler`: it
+ * stays truthful about clients running a different build of the scene, whose
+ * synced components we may not be able to read at all.
+ */
+export function isPresent(userId: string): boolean {
+  return userId !== '' && presentUserIds().has(userId.toLowerCase())
+}
+
 export type RosterEntry = {
   entity: Entity
   userId: string

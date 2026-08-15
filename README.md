@@ -1,265 +1,161 @@
-# SDK7 Template scene
+# Wiggle Room
 
-## Try it out
+**Emote charades in Decentraland.** One player gets a secret prompt and acts it out using
+nothing but their avatar's built-in emotes. Everyone else picks what they think it was.
+No typing, no voice required, no wearables to buy — just vibes.
 
-**Previewing the scene**
+Built with Decentraland SDK7, mobile-first.
 
-1. Download this repository.
+> **Play it:** _TODO — deployed World URL_
+> **Source:** _TODO — public repository URL_
 
-2. Install the [Decentraland Editor](https://docs.decentraland.org/creator/development-guide/sdk7/editor/)
+---
 
-3. Open a Visual Studio Code window on this scene's root folder. Not on the root folder of the whole repo, but instead on this sub-folder that belongs to the scene.
+## How a round plays
 
-4. Open the Decentraland Editor tab, and press **Run Scene**
+| Phase | Length | What happens |
+| --- | --- | --- |
+| **Lobby** | — | Waiting for a second player. Alone? Practice mode lets you try the emotes. |
+| **Starting** | 8s | Enough players joined. Everyone gets ready. |
+| **Pick** | 12s | The actor sees 4 prompts and picks one — and steps onto the pink stage. |
+| **Act** | 45s | The actor mimes it. Guessers lock in one of the same 4 options, whenever they're ready. |
+| **Reveal** | 9s | The answer, who voted for what, and the points. |
+| **Intermission** | 4s | Breather. The stage passes to the next player. |
 
-Alternatively, you can use the command line. Inside this scene root directory run:
+Eight rounds make a match, then the final scoreboard and a fresh start. Everyone takes a
+turn on stage — the actor rotates through the room in a fixed order, so nobody spectates
+all night.
 
+### Scoring
+
+- **Correct guess:** 100 points, plus up to 100 more for guessing early — the speed bonus
+  decays linearly across the act phase.
+- **Streaks:** consecutive correct guesses multiply at 1× → 1.25× → 1.5×.
+- **The actor** earns 60 per player who guessed right, with a floor of 10. Being
+  expressive pays better than being cryptic.
+
+## Why mobile-first
+
+Decentraland on a phone is a different game to Decentraland on a desktop, and most party
+games ported there assume a keyboard. Wiggle Room is built the other way round:
+
+- **No typing.** Every input in the game is a single tap. The one "skill" input — firing
+  an emote — has no timing window at all.
+- **Everything lives in the bottom third.** The UI is one bottom sheet, because that's the
+  only region a thumb reaches while the top of the screen shows the avatars.
+- **Big targets.** Primary buttons are 76pt on touch (Apple and Google both put the
+  comfortable minimum around 44–48). The emote grid is 4 columns on touch, 8 on desktop.
+- **One scale factor.** Type and spacing derive from a single canvas-width scale with a
+  hard floor, so a 375pt phone and a 2560px monitor share one layout.
+- **Interactive in about a second.** The arena is built entirely from ECS primitives —
+  there is not a single GLB to download before you can play.
+
+## Running it locally
+
+```bash
+npm install
 ```
+
+```bash
 npm run start
 ```
 
-## What's new on SDK 7
+Then open the preview URL it prints. To type-check and bundle without launching:
 
-Below are some basic concepts about the SDK 7 syntax. For more details, see the [Documentation site](https://docs.decentraland.org/creator/).
-
-### Entities
-
-An Entity is just an ID. It is an abstract concept not represented by any data structure. There is no "class Entity". Just a number that is used as a reference to group different components.
-
-```ts
-const myEntity = engine.addEntity()
-console.console.log(myEntity) // 100
-
-// Remove Entity
-engine.removeEntity(myEntity)
+```bash
+npm run build
 ```
 
-> Note: Note that it's no longer necessary to separately create an entity and then add it to the engine, this is all done in a single act.
+Deploying to a World requires a `worldConfiguration` block in
+[`scene.json`](scene.json) naming the World you own:
 
-### Components
-
-The component is just a data container, WITHOUT any functions.
-
-To add a component to an entity, the entry point is now the component type, not the entity.
-
-```ts
-Transform.create(myEntity, <params>)
+```json
+"worldConfiguration": { "name": "your-name.dcl.eth" }
 ```
 
-This is different from how the syntax was in SDK6:
+Then:
 
-```ts
-// OLD Syntax
-myEntity.addComponent(Transform)
+```bash
+npm run deploy -- --target-content https://worlds-content-server.decentraland.org
 ```
 
-#### Base Components
+## How it works
 
-Base components already come packed as part of the SDK. Most of them interact directly with the renderer in some way. This is the full list of currently supported base components:
+The whole game runs off one system in [`src/index.ts`](src/index.ts), which calls
+`hostTick` (authority) and `localTick` (this client's own clock) every frame.
 
-- Transform
-- Animator
-- Material
-- MeshRenderer
-- MeshCollider
-- AudioSource
-- AudioStream
-- AvatarAttach
-- AvatarModifierArea
-- AvatarShape
-- Billboard
-- CameraMode
-- CameraModeArea
-- GltfContainer
-- NftShape
-- PointerEventsResult
-- PointerHoverFeedback
-- PointerLock
-- Raycast
-- RaycastResult
-- TextShape
-- VisibilityComponent
+**One host, elected without a handshake.** The client with the lowest userId in the room
+runs the state machine; everyone else treats the match as read-only. Because every client
+computes the same election from the same data, there is no handover message to lose — when
+the host walks out, the next client picks the match up on its very next frame.
 
-```ts
-const entity = engine.addEntity()
-Transfrom.create(entity, {
-  position: Vector3.create(12, 1, 12)
-  scale: Vector3.One(),
-  rotation: Quaternion.Identity()
-})
-GltfContainer.create(zombie, {
-  withCollisions: true,
-  isPointerBlocker: true,
-  visible: true,
-  src: 'models/zombie.glb'
-})
+**Two synced components** ([`src/game/components.ts`](src/game/components.ts)):
+
+- `Match` — phase, actor, options, answer, scores. Written **only** by the host, so there
+  are no last-write-wins races over the scoreboard.
+- `Wiggler` — one per player, written only by that player: their pick, their guess, and
+  how far into the act phase they locked it in.
+
+**No clock synchronisation.** The host bumps a `phaseToken` on every phase entry; clients
+restart their own countdown when it changes. Nobody has to agree on wall-clock time.
+
+**Rounds fail safe.** An actor who never picks, walks out mid-performance, or leaves a
+two-player room voids the round *through* the reveal screen, so players are told why it
+ended instead of being dropped into an unexplained intermission.
+
+**Protocol versioning.** `Match.protocol` is checked, not just written. A client running
+an older build of the scene shows an "out of date" card rather than corrupting a match it
+cannot read — and a match orphaned by a newer build is reclaimed once its host leaves, so
+a mixed-version room can never brick permanently.
+
+### Layout
+
+```
+src/
+  index.ts            entry point; one system drives everything
+  config.ts           every tunable number — timings, scoring, rules, arena
+  game/
+    components.ts     synced ECS components + phase enum
+    net.ts            sync, host election, roster
+    machine.ts        the match state machine
+    prompts.ts        42 prompts in 4 packs + deterministic RNG
+    scoreboard.ts     scoreboard serialisation
+    emotes.ts         the 16 base emotes
+  scene/arena.ts      stage, seating, status backdrop, actor spotlight
+  ui/                 bottom sheet, widgets, theme
 ```
 
-#### Custom Components
+Adding a prompt has one rule: it must be actable with the base emote set plus walking and
+jumping. If you can't mime it in three emotes, it doesn't belong.
 
-Each component must have a unique number ID. If a number is repeated, the engine or another player receiving updates might apply changes to the wrong component. Note that numbers 1-2000 are reserved for the base components.
+## Mobile QA
 
-When creating a custom component you declare the schema of the data to be stored in it. Every field in a component MUST belong to one of the built-in special schemas provided as part of the SDK. These special schemas include extra functionality that allows them to be serialized/deserialized.
+Status: **not yet run.** Results go in this table once tested on device.
 
-Currently, the names of these special schemas are:
+| Check | Result |
+| --- | --- |
+| 2 players — full match end to end | ☐ |
+| 3 players | ☐ |
+| 4 players | ☐ |
+| Actor disconnects during Pick | ☐ |
+| Actor disconnects during Act | ☐ |
+| Guesser disconnects mid-round | ☐ |
+| Host leaves mid-match (handover) | ☐ |
+| Two-player room: actor leaves → void → lobby | ☐ |
+| Reconnect after backgrounding the app | ☐ |
+| Portrait 360×640 — no clipping | ☐ |
+| Portrait 390×844 — no clipping | ☐ |
+| 16-emote grid fits with prompt + timer above it | ☐ |
+| Landscape | ☐ |
+| Desktop 1280×800 | ☐ |
+| Remote actor position visible to the host (stage gate) | ☐ |
+| Frame rate during a 4-player act phase | ☐ |
 
-##### Primitives
+## Tech
 
-1. `Schemas.Boolean`: true or false (serialized as a Byte)
-2. `Schemas.String`: UTF8 strings (serialized length and content)
-3. `Schemas.Float`: single precission float
-4. `Schemas.Double`: double precision float
-5. `Schemas.Byte`: a single byte, integer with range 0..255
-6. `Schemas.Short`: 16 bits signed-integer with range -32768..32767
-7. `Schemas.Int`: 32 bits signed-integer with range -2³¹..(2³¹-1)
-8. `Schemas.Int64`: 64 bits signed-integer
-9. `Schemas.Number`: an alias to Schemas.Float
+Decentraland SDK7 · TypeScript · `@dcl/sdk/react-ecs` for UI · `@dcl/sdk/network` for
+state sync. One parcel, no external assets.
 
-##### Specials
+## License
 
-10. `Schemas.Entity`: a wrapper to int32 that casts the type to `Entity`
-11. `Schemas.Vector3`: a Vector3 with { x, y, z }
-12. `Schemas.Quaternion`: a Quaternion with { x, y, z, w}
-13. `Schemas.Color3`: a Color3 with { r, g, b }
-14. `Schemas.Color4`: a Colo4 with { r, g, b, a }
-
-##### Schema generator
-
-15. `Schemas.Enum`: passing the serialization Schema and the original Enum as generic
-16. `Schemas.Array`: passing the item Schema
-17. `Schemas.Map`: passing a Map with Schemas as values
-18. `Schemas.Optional`: passing the schema to serialize
-
-Below are some examples of how these schemas can be declared.
-
-```ts
-const object = Schemas.Map({ x: Schemas.Int }) // { x: 1 }
-
-const array = Schemas.Map(Schemas.Int) // [1,2,3,4]
-
-const objectArray = Schemas.Array(Schemas.Map({ x: Schemas.Int })) // [{ x: 1 }, { x: 2 }]
-
-const BasicSchemas = Schemas.Map({
-  x: Schemas.Int,
-  y: Schemas.Float,
-  text: Schemas.String,
-  flag: Schemas.Boolean
-}) // { x: 1, y: 1.412, text: 'ecs 7 text', flag: true }
-
-const VelocitySchema = Schemas.Map({
-  x: Schemas.Float,
-  y: Schemas.Float,
-  z: Schemas.Float
-})
-```
-
-To then create a custom component using one of these schemas, use the following syntax:
-
-```ts
-export const myCustomComponent = engine.defineComponent(MyDataSchema, ComponentID)
-```
-
-For contrast, below is an example of how components were constructed prior to SDK 7.
-
-```ts
-/**
- * OLD SDK
- */
-
-// Define Component
-@Component('velocity')
-export class Velocity extends Vector3 {
-  constructor(x: number, y: number, z: number) {
-    super(x, y, z)
-  }
-}
-// Create entity
-const wheel = new Entity()
-
-// Create instance of component with default values
-wheel.addComponent(new WheelSpin())
-
-/**
- * ECS 7
- */
-// Define Component
-const VelocitySchema = Schemas.Map({
-  x: Schemas.Float,
-  y: Schemas.Float,
-  z: Schemas.Float
-})
-const COMPONENT_ID = 2008
-const VelocityComponent = engine.defineComponent(Velocity, COMPONENT_ID)
-// Create Entity
-const entity = engine.addEntity()
-
-// Create instance of component
-VelocityComponent.create(entity, { x: 1, y: 2.3, z: 8 })
-
-// Remove instance of a component
-VelocityComponent.deleteFrom(entity)
-```
-
-### Systems
-
-Systems are pure & simple functions.
-All your logic comes here.
-A system might hold data which is relevant to the system itself, but no data about the entities it processes.
-
-To add a system, all you need to do is define a function and add it to the engine. The function may optionally include a `dt` parameter with the delay since last frame, just like in prior versions of the SDK.
-
-```ts
-// Basic system
-function mySystem() {
-  console.log('my system is running')
-}
-
-engine.addSystem(mySystem)
-
-// System with dt
-function mySystemDT(dt: number) {
-  console.log('time since last frame:  ', dt)
-}
-
-engine.addSystem(mySystemDT)
-```
-
-#### Query components
-
-The way to group/query the components inside systems is using the method getEntitiesWith.
-`engine.getEntitiesWith(...components)`.
-
-```ts
-function physicsSystem(dt: number) {
-  for (const [entity, transform, velocity] of engine.getEntitiesWith(Transform, Velocity)) {
-    // transform & velocity are read only components.
-    if (transform.position.x === 10) {
-      // To update a component, you need to call the `.mutable` method
-      const mutableVelocity = VelocityComponent.getMutable(entity)
-      mutableVelocity.x += 1
-    }
-  }
-}
-
-// Add system to the engine
-engine.addSystem(physicsSystem)
-
-// Remove system
-engine.removeSystem(physicsSystem)
-```
-
-### Mutability
-
-Mutability is now an important distinction. We can choose to deal with mutable or with immutable versions of a component. We should use `getMutable` only when we plan to make changes to a component. Dealing with immutable versions of components results in a huge gain in performance.
-
-The `.get()` function in a component returns an immutable version of the component. You can only read its values, but can't change any of the properties on it.
-
-```ts
-const immutableTransform = Transform.get(myEntity)
-```
-
-To fetch the mutable version of a component, call it via `ComponentDefinition.getMutable()`. For example:
-
-```ts
-const mutableTransform = Transform.getMutable(myEntity)
-```
+MIT — see [LICENSE](LICENSE).

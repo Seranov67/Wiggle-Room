@@ -3,7 +3,7 @@ import { Match, Phase, PhaseValue, Wiggler } from './components'
 import { buildRound, makeRng, PROMPTS_BY_ID } from './prompts'
 import { ARENA, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
 import { ensureScore, parseScores, ScoreRow, serialiseScores } from './scoreboard'
-import { findWiggler, getMatchEntity, getSelfEntity, isHost, myUserId, networkReady, roster } from './net'
+import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
 
 /**
  * The match state machine.
@@ -19,6 +19,22 @@ import { findWiggler, getMatchEntity, getSelfEntity, isHost, myUserId, networkRe
 
 let hostElapsedMs = 0
 let hostKnownToken = -1
+/** How long the round's actor has been missing from the roster. */
+let actorGoneMs = 0
+/** How long the roster has been too thin to sustain a round. */
+let rosterThinMs = 0
+/** How long a match from a newer build has been without its host in the room. */
+let orphanedMatchMs = 0
+
+/**
+ * A hole in the roster — a missing actor, or a room that just dropped below
+ * `minPlayers` — has to persist this long before we act on it. Absorbs the
+ * brief gaps a sync hiccup produces, without making anyone wait around.
+ */
+const ROSTER_GRACE_MS = 1_500
+
+/** How long a newer build's match must be hostless before we take it over. */
+const ORPHAN_GRACE_MS = 10_000
 
 // ---------------------------------------------------------------------------
 // Client-side state
@@ -53,20 +69,27 @@ export function phaseDurations(phase: PhaseValue): number {
 // ---------------------------------------------------------------------------
 
 export function hostTick(dtSeconds: number): void {
-  if (!networkReady() || !isHost()) return
+  if (!networkReady()) return
 
   const entity = getMatchEntity()
   if (!Match.has(entity)) {
-    resetToLobby()
+    if (isHost()) resetToLobby()
     return
   }
 
   const m = Match.get(entity)
 
-  // The match on the wire was written by a build whose payload we may not
-  // understand. Refuse to drive it rather than corrupt it — the mismatched
-  // client shows an "out of date" card instead of playing.
-  if (m.protocol !== PROTOCOL_VERSION) return
+  // Protocol reconciliation runs *before* the host election on purpose: when
+  // the elected host is the incompatible one, gating this behind `isHost()`
+  // would deadlock the room — it cannot drive the match and nobody else is
+  // allowed to.
+  if (m.protocol !== PROTOCOL_VERSION) {
+    reconcileProtocol(m.protocol, m.hostId, dtSeconds)
+    return
+  }
+  orphanedMatchMs = 0
+
+  if (!isHost()) return
 
   // A previous host left: adopt the match and restart the current phase clock
   // rather than inheriting an unknown amount of elapsed time.
@@ -81,13 +104,30 @@ export function hostTick(dtSeconds: number): void {
   if (hostKnownToken !== m.phaseToken) {
     hostKnownToken = m.phaseToken
     hostElapsedMs = 0
+    actorGoneMs = 0
   }
   hostElapsedMs += dtSeconds * 1000
 
   const players = roster()
 
-  // Not enough people for a real round — fall back to the lobby from anywhere.
-  if (players.length < RULES.minPlayers && m.phase !== Phase.Lobby) {
+  if (players.length >= RULES.minPlayers) rosterThinMs = 0
+  else rosterThinMs += dtSeconds * 1000
+
+  // Not enough people for a real round. This is the two-player case: the actor
+  // leaves, the roster collapses, and the one person left is standing in an
+  // arena wondering what happened. So unwind it in the same order a full room
+  // would — void the round, show why, *then* fall back to the lobby.
+  //
+  // Grace-gated like the actor check: a two-player round must not die because
+  // one player flickered out of the roster for a frame.
+  if (rosterThinMs >= ROSTER_GRACE_MS && m.phase !== Phase.Lobby) {
+    if (m.phase === Phase.Pick || m.phase === Phase.Act) {
+      voidRound()
+      return
+    }
+    // Let a result that is already on screen finish being read.
+    if ((m.phase === Phase.Reveal || m.phase === Phase.MatchEnd) && !timeUp(m.phaseDurationMs)) return
+
     enterPhase(Phase.Lobby, (mut) => {
       mut.actorId = ''
       mut.optionIds = ''
@@ -106,20 +146,35 @@ export function hostTick(dtSeconds: number): void {
       return
 
     case Phase.Pick: {
+      // Actor walked out. End it now rather than running the full timer down.
+      if (!actorPresent(m.actorId, dtSeconds)) {
+        voidRound()
+        return
+      }
+
       const chosen = actorChoice(m.actorId, m.roundIndex)
-      // The act only starts once the actor is both committed and standing on
-      // the stage — a mime happening in a corner is unreadable for everyone.
+      // Standing on the stage holds the act back while the pick timer runs — a
+      // mime happening in a corner is unreadable — but it is a nudge, not a
+      // hard gate: see the timeout branch below.
       if (chosen !== '' && isOnStage(m.actorId)) {
         enterPhase(Phase.Act)
       } else if (timeUp(m.phaseDurationMs)) {
-        // Actor never committed, or never walked on (usually because they
-        // dropped). Void the round instead of stalling everyone.
-        voidRound()
+        // Timer's up. An actor who committed still gets their act even if they
+        // never made it onto the stage: the position read comes from the
+        // renderer and we would rather run an off-centre round than void a
+        // good one on data we cannot fully trust. Only a silent actor voids.
+        if (chosen !== '') enterPhase(Phase.Act)
+        else voidRound()
       }
       return
     }
 
     case Phase.Act:
+      // Nobody should watch an empty stage for the rest of a 45s timer.
+      if (!actorPresent(m.actorId, dtSeconds)) {
+        voidRound()
+        return
+      }
       if (timeUp(m.phaseDurationMs) || everyoneGuessed(m.actorId, m.roundIndex)) resolveRound()
       return
 
@@ -143,6 +198,54 @@ function timeUp(durationMs: number): boolean {
   return hostElapsedMs >= durationMs
 }
 
+/**
+ * Decide what to do about a match written by a different build of the scene.
+ *
+ * Standing down unconditionally would brick the room: synced state outlives the
+ * client that wrote it, so a single visitor on a newer build can leave behind a
+ * match that no remaining client is willing to touch — and reloading does not
+ * clear it, because the stale state syncs straight back from the other peers.
+ *
+ * Liveness is judged by whether the match's own host is still in the room —
+ * never by whether the match is advancing. Lobby is a legitimate resting state
+ * that never bumps `phaseToken`, so a frozen token proves nothing, and treating
+ * it as death would let an old client stomp a perfectly healthy newer host.
+ */
+function reconcileProtocol(theirProtocol: number, theirHostId: string, dtSeconds: number): void {
+  // We are the newer build: we understand our own payload and they do not.
+  if (theirProtocol < PROTOCOL_VERSION) {
+    resetToLobby()
+    return
+  }
+
+  // They are newer and their host is still here, so the room is genuinely
+  // mixed. Stand down and keep showing the "out of date" card: two builds that
+  // cannot read each other's payload have no correct way to share a room, and
+  // pretending otherwise would just make the two of us fight over the state.
+  if (isPresent(theirHostId)) {
+    orphanedMatchMs = 0
+    return
+  }
+
+  // Their host is gone and what they left behind is unplayable for everyone
+  // still standing here. Take it over, once we are sure this is not a blip.
+  orphanedMatchMs += dtSeconds * 1000
+  if (orphanedMatchMs >= ORPHAN_GRACE_MS) resetToLobby()
+}
+
+/**
+ * Is the round's actor still here? Answers `true` during the grace window so a
+ * momentary roster gap cannot void a live round.
+ */
+function actorPresent(actorId: string, dtSeconds: number): boolean {
+  if (findWiggler(actorId) !== null) {
+    actorGoneMs = 0
+    return true
+  }
+  actorGoneMs += dtSeconds * 1000
+  return actorGoneMs < ROSTER_GRACE_MS
+}
+
 function resetToLobby(): void {
   const entity = getMatchEntity()
   Match.createOrReplace(entity, {
@@ -159,6 +262,7 @@ function resetToLobby(): void {
     usedPromptIds: ''
   })
   hostElapsedMs = 0
+  actorGoneMs = 0
   hostKnownToken = Match.get(entity).phaseToken
 }
 
@@ -170,6 +274,7 @@ function enterPhase(phase: PhaseValue, patch?: (mut: ReturnType<typeof Match.get
   mut.phaseToken = mut.phaseToken + 1
   if (patch) patch(mut)
   hostElapsedMs = 0
+  actorGoneMs = 0
   hostKnownToken = mut.phaseToken
 }
 

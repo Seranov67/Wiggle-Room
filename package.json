@@ -1,7 +1,7 @@
 {
-  "name": "dcl-project",
+  "name": "wiggle-room",
   "version": "1.0.0",
-  "description": "SDK7 Template scene",
+  "description": "Emote charades in Decentraland — act out a prompt with your avatar, everyone else guesses.",
   "scripts": {
     "start": "sdk-commands start",
     "deploy": "sdk-commands deploy",
@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@dcl/js-runtime": "7.25.0",
-    "@dcl/sdk": "latest"
+    "@dcl/sdk": "7.25.0"
   },
   "engines": {
     "node": ">=16.0.0",
@@ -22,8 +22,5 @@
     "singleQuote": true,
     "printWidth": 120,
     "trailingComma": "none"
-  },
-  "dependencies": {
-    "dcl-project": "file:"
   }
 }

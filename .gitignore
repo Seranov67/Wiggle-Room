@@ -1,4 +1,6 @@
-package-lock.json
+# package-lock.json is deliberately NOT ignored: CI runs `npm ci`, which needs
+# it, and pinning the SDK is only reproducible if the lockfile ships with the
+# repo. It stays listed in .dclignore, so it is still kept out of deployments.
 *.js
 node_modules
 bin/
