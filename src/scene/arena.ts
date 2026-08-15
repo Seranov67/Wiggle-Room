@@ -23,7 +23,7 @@ import {
 } from '../game/machine'
 import { getPlayer } from '@dcl/sdk/players'
 import { myUserId } from '../game/net'
-import { PROMPTS_BY_ID } from '../game/prompts'
+import { PACK_NAMES, packForDay, PROMPTS_BY_ID } from '../game/prompts'
 
 /**
  * The room itself. Everything is built from primitives on purpose: no GLB
@@ -181,7 +181,7 @@ function backdropSystem(): void {
 
   switch (m.phase) {
     case Phase.Lobby:
-      text.text = 'WIGGLE ROOM\nwaiting for players'
+      text.text = `WIGGLE ROOM\nTODAY: ${PACK_NAMES[packForDay()].toUpperCase()}`
       break
     case Phase.Starting:
       text.text = `starting in ${secondsLeft()}`

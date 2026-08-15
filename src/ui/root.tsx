@@ -27,7 +27,7 @@ import {
   secondsLeft,
   startDemo
 } from '../game/machine'
-import { PROMPTS_BY_ID } from '../game/prompts'
+import { PACK_NAMES, packForDay, PROMPTS_BY_ID } from '../game/prompts'
 import { EMOTES, playEmote } from '../game/emotes'
 import { myUserId, networkReady, roster } from '../game/net'
 import { ranked, findScore } from '../game/scoreboard'
@@ -133,6 +133,7 @@ function LobbyScreen() {
   return (
     <Card>
       <Title text="Wiggle Room" color={C.hot} />
+      <Caption text={`today's theme — ${PACK_NAMES[packForDay()]}`} color={C.amber} />
       <Caption
         text={
           needed > 0
@@ -354,6 +355,7 @@ function MatchEndScreen() {
       <Caption text="MATCH OVER" />
       <Title text={`${winner} wins`} color={C.amber} />
       <ScoreStrip full />
+      <Caption text={`tomorrow's theme — ${PACK_NAMES[packForDay(1)]}`} color={C.mint} />
       <Caption text="new match starting..." />
     </Card>
   )

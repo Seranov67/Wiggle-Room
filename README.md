@@ -26,6 +26,11 @@ Eight rounds make a match, then the final scoreboard and a fresh start. Everyone
 turn on stage — the actor rotates through the room in a fixed order, so nobody spectates
 all night.
 
+**A different theme every day.** One of the four prompt packs is featured each day, and
+the match-end screen tells you which one is up tomorrow. The rotation is keyed to the UTC
+day number, so every player everywhere sees the same theme with no server, no database
+and no stored state — and tomorrow is reliably not today.
+
 **Arriving first doesn't mean waiting around.** A lone visitor can play a round solo on a
 shortened clock — pick a prompt, mime it under the spotlight, then read what would have
 happened. It uses the same screens a real round does, so you learn the actual interface

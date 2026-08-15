@@ -1,6 +1,6 @@
 import { getPlayer } from '@dcl/sdk/players'
 import { Match, Phase, PhaseValue, Wiggler } from './components'
-import { buildRound, makeRng, PROMPTS_BY_ID } from './prompts'
+import { buildRound, makeRng, packForDay, PROMPTS_BY_ID } from './prompts'
 import { ARENA, DEMO, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
 import { ensureScore, parseScores, ScoreRow, serialiseScores } from './scoreboard'
 import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
@@ -303,7 +303,7 @@ function startRound(roundIndex: number): void {
   const used = m.usedPromptIds === '' ? [] : m.usedPromptIds.split(',')
   // Seeded so the option set is reproducible when debugging a specific round.
   const rng = makeRng(roundIndex * 7919 + m.phaseToken * 104729 + 1)
-  const round = buildRound(rng, used)
+  const round = buildRound(rng, used, packForDay())
 
   const nextUsed = used.concat(round.optionIds).slice(-RULES.recentPromptMemory)
 

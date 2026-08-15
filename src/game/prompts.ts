@@ -21,6 +21,29 @@ export type Prompt = {
   suggests: string[]
 }
 
+export const PACK_NAMES: Record<PackId, string> = {
+  everyday: 'Everyday Pain',
+  party: 'Party Mode',
+  internet: 'Extremely Online',
+  movies: 'Screen Time'
+}
+
+const PACK_ORDER: PackId[] = ['everyday', 'party', 'internet', 'movies']
+
+/**
+ * Which pack is in the spotlight, `dayOffset` days from now.
+ *
+ * Keyed to the UTC day number, so every player on Earth gets the same theme
+ * without a server, a database, or one byte of stored state — and so tomorrow
+ * is reliably different from today. That difference is the whole reason to come
+ * back, and it costs nothing to run.
+ */
+export function packForDay(dayOffset = 0, nowMs: number = Date.now()): PackId {
+  const day = Math.floor(nowMs / 86_400_000) + dayOffset
+  const index = ((day % PACK_ORDER.length) + PACK_ORDER.length) % PACK_ORDER.length
+  return PACK_ORDER[index]
+}
+
 export const PROMPTS: Prompt[] = [
   // ---- everyday ----------------------------------------------------------
   { id: 'ev-monday', pack: 'everyday', text: 'Monday morning', suggests: ['headexplode', 'shrug'] },
@@ -89,9 +112,19 @@ for (const p of PROMPTS) PROMPTS_BY_ID[p.id] = p
  * `rng` is injected so the host can generate a round deterministically from a
  * seed and every client can rebuild the identical option order.
  */
-export function buildRound(rng: () => number, avoidIds: string[] = []): { answerId: string; optionIds: string[] } {
+export function buildRound(
+  rng: () => number,
+  avoidIds: string[] = [],
+  preferPack?: PackId
+): { answerId: string; optionIds: string[] } {
   const fresh = PROMPTS.filter((p) => avoidIds.indexOf(p.id) === -1)
-  const pool = fresh.length >= 4 ? fresh : PROMPTS
+
+  // Today's featured pack gets first refusal on the answer. Once it is used up
+  // the round falls back to the whole library instead of repeating itself — a
+  // theme is meant to be a flavour, not a cage.
+  const themed = preferPack === undefined ? [] : fresh.filter((p) => p.pack === preferPack)
+  const pool = themed.length > 0 ? themed : fresh.length >= 4 ? fresh : PROMPTS
+
   const answer = pool[Math.floor(rng() * pool.length)]
 
   const siblings = BY_PACK[answer.pack].filter((p) => p.id !== answer.id)
