@@ -468,6 +468,25 @@ function nameOf(userId: string): string {
   return `${userId.slice(0, 6)}…`
 }
 
+/**
+ * The actor's one line of instruction. Getting onto the stage is a hard gate on
+ * the round starting, so it outranks anything else we could say here.
+ */
+function pickCaption(onStage: boolean, hasPicked: boolean): string {
+  if (onStage) return 'YOUR TURN — pick the one you can mime'
+  return hasPicked ? 'NOW STEP ONTO THE PINK STAGE' : 'STEP ONTO THE PINK STAGE, THEN PICK'
+}
+
+/** Why the round died — the actor walking out and the actor going quiet look
+ *  identical on the wire, so we tell them apart by who is still in the room. */
+function voidReason(actorId: string): string {
+  const target = actorId.toLowerCase()
+  for (const p of roster()) {
+    if (p.userId.toLowerCase() === target) return 'the actor never took the stage'
+  }
+  return 'the actor left the room'
+}
+
 function nextUpCaption(): string {
   const m = currentMatch()
   if (m === null) return ''

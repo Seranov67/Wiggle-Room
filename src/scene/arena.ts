@@ -11,8 +11,9 @@ import {
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { ARENA } from '../config'
 import { Phase } from '../game/components'
-import { amActor, currentMatch, secondsLeft } from '../game/machine'
+import { amActor, currentMatch, isOnStage, secondsLeft } from '../game/machine'
 import { getPlayer } from '@dcl/sdk/players'
+import { myUserId } from '../game/net'
 import { PROMPTS_BY_ID } from '../game/prompts'
 
 /**
@@ -157,7 +158,8 @@ function backdropSystem(): void {
       text.text = `starting in ${secondsLeft()}`
       break
     case Phase.Pick:
-      text.text = amActor() ? 'YOUR TURN\npick a prompt' : 'the actor is choosing...'
+      if (!amActor()) text.text = 'the actor is choosing...'
+      else text.text = isOnStage(myUserId()) ? 'YOUR TURN\npick a prompt' : 'YOUR TURN\nstep onto the pink stage'
       break
     case Phase.Act:
       text.text = amActor() ? `ACT IT OUT\n${secondsLeft()}s` : `WHAT IS IT?\n${secondsLeft()}s`
