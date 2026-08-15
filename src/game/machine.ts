@@ -1,7 +1,7 @@
 import { getPlayer } from '@dcl/sdk/players'
 import { Match, Phase, PhaseValue, Wiggler } from './components'
 import { buildRound, makeRng, PROMPTS_BY_ID } from './prompts'
-import { ARENA, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
+import { ARENA, DEMO, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
 import { ensureScore, parseScores, ScoreRow, serialiseScores } from './scoreboard'
 import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
 
@@ -42,8 +42,12 @@ const ORPHAN_GRACE_MS = 10_000
 
 let localElapsedMs = 0
 let localKnownToken = -1
-/** Set while the player is alone and messing about in the emote lab. */
-let practicePromptId = ''
+
+/** Solo demo state. Never synced — it exists only for whoever is running it. */
+let demoPhase: DemoPhaseValue = 0
+let demoElapsedMs = 0
+let demoOptions: string[] = []
+let demoChoiceId = ''
 
 export function phaseDurations(phase: PhaseValue): number {
   switch (phase) {
@@ -417,6 +421,8 @@ function speedBonus(guessMs: number): number {
 // ---------------------------------------------------------------------------
 
 export function localTick(dtSeconds: number): void {
+  demoTick(dtSeconds)
+
   const entity = getMatchEntity()
   const m = Match.getOrNull(entity)
   if (m === null || !protocolOk()) return
@@ -426,12 +432,6 @@ export function localTick(dtSeconds: number): void {
     localElapsedMs = 0
   }
   localElapsedMs += dtSeconds * 1000
-
-  // Practice is a lobby-only distraction. Once a real match starts it has to go
-  // immediately: the practice sheet covers the pick and guess UI, so a player
-  // left inside it would silently sit out — or, if they are the actor, mime a
-  // prompt they never saw.
-  if (practicePromptId !== '' && m.phase !== Phase.Lobby) endPractice()
 
   // The actor's own client commits a random option if they sat out the pick
   // timer, so an idle-but-connected actor does not void the round.
@@ -532,20 +532,114 @@ export function commitGuess(promptId: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Solo practice — keeps a single visitor busy instead of showing a dead lobby
+// Solo demo — the whole round, played alone
+//
+// Someone who arrives before anyone else would otherwise be shown a lobby that
+// says "1 more player to start", and nothing else. That is a dreadful first
+// impression of a game whose entire point *is* the round — and it is exactly
+// what a reviewer visiting on their own would see.
+//
+// So a lone visitor can play one through: pick a prompt, mime it on the stage,
+// then read what would have happened. It runs entirely on this client and never
+// writes to the synced `Match`, so it cannot disturb a real match forming
+// around it — and it steps aside the moment one does.
 // ---------------------------------------------------------------------------
 
-export function practicePrompt(): string {
-  return practicePromptId
+export const DemoPhase = { Off: 0, Pick: 1, Act: 2, Reveal: 3 } as const
+export type DemoPhaseValue = (typeof DemoPhase)[keyof typeof DemoPhase]
+
+function demoDuration(phase: DemoPhaseValue): number {
+  switch (phase) {
+    case DemoPhase.Pick:
+      return DEMO.pickMs
+    case DemoPhase.Act:
+      return DEMO.actMs
+    case DemoPhase.Reveal:
+      return DEMO.revealMs
+    default:
+      return 0
+  }
 }
 
-export function rollPracticePrompt(): void {
-  const rng = makeRng(Math.floor(Math.random() * 0xffffffff))
-  practicePromptId = buildRound(rng).answerId
+function demoTick(dtSeconds: number): void {
+  if (demoPhase === DemoPhase.Off) return
+
+  // A real match started. The demo has done its job — get out of the way.
+  const m = Match.getOrNull(getMatchEntity())
+  if (m !== null && m.phase !== Phase.Lobby) {
+    endDemo()
+    return
+  }
+
+  demoElapsedMs += dtSeconds * 1000
+
+  switch (demoPhase) {
+    case DemoPhase.Pick:
+      // Committing early skips the wait; running the clock out picks for them,
+      // because a demo that stalls teaches the wrong thing about the game.
+      if (demoChoiceId !== '') enterDemoPhase(DemoPhase.Act)
+      else if (demoElapsedMs >= DEMO.pickMs) {
+        demoChoiceId = demoOptions[Math.floor(Math.random() * demoOptions.length)] ?? ''
+        enterDemoPhase(DemoPhase.Act)
+      }
+      return
+
+    case DemoPhase.Act:
+      if (demoElapsedMs >= DEMO.actMs) enterDemoPhase(DemoPhase.Reveal)
+      return
+
+    case DemoPhase.Reveal:
+      if (demoElapsedMs >= DEMO.revealMs) endDemo()
+      return
+  }
 }
 
-export function endPractice(): void {
-  practicePromptId = ''
+function enterDemoPhase(phase: DemoPhaseValue): void {
+  demoPhase = phase
+  demoElapsedMs = 0
+}
+
+export function startDemo(): void {
+  const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)))
+  demoOptions = round.optionIds
+  demoChoiceId = ''
+  enterDemoPhase(DemoPhase.Pick)
+}
+
+export function endDemo(): void {
+  demoPhase = DemoPhase.Off
+  demoElapsedMs = 0
+  demoOptions = []
+  demoChoiceId = ''
+}
+
+export function demoPhaseNow(): DemoPhaseValue {
+  return demoPhase
+}
+
+export function demoOptionIds(): string[] {
+  return demoOptions
+}
+
+export function demoChoice(): string {
+  return demoChoiceId
+}
+
+/** The actor's own pick is what they mime, so in a demo it is also the answer. */
+export function commitDemoChoice(promptId: string): void {
+  if (demoPhase !== DemoPhase.Pick) return
+  if (demoOptions.indexOf(promptId) === -1) return
+  demoChoiceId = promptId
+}
+
+export function demoSecondsLeft(): number {
+  const total = demoDuration(demoPhase)
+  return total <= 0 ? 0 : Math.max(0, Math.ceil((total - demoElapsedMs) / 1000))
+}
+
+export function demoRemaining01(): number {
+  const total = demoDuration(demoPhase)
+  return total <= 0 ? 0 : Math.max(0, Math.min(1, 1 - demoElapsedMs / total))
 }
 
 export function scoreRows(): ScoreRow[] {

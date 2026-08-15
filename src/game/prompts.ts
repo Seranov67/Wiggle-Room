@@ -17,7 +17,7 @@ export type Prompt = {
   pack: PackId
   /** Shown to the actor, and as one of the 4 buttons for guessers. Keep under ~28 chars. */
   text: string
-  /** Emote ids that read well for this prompt. Used by the practice bot and by the hint button. */
+  /** Emote ids that read well for this prompt. Highlighted in the wheel while acting. */
   suggests: string[]
 }
 

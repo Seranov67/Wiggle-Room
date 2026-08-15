@@ -15,7 +15,7 @@ Built with Decentraland SDK7, mobile-first.
 
 | Phase | Length | What happens |
 | --- | --- | --- |
-| **Lobby** | — | Waiting for a second player. Alone? Practice mode lets you try the emotes. |
+| **Lobby** | — | Waiting for a second player. Alone? Play a round solo to see how it works. |
 | **Starting** | 8s | Enough players joined. Everyone gets ready. |
 | **Pick** | 12s | The actor sees 4 prompts and picks one — and steps onto the pink stage. |
 | **Act** | 45s | The actor mimes it. Guessers lock in one of the same 4 options, whenever they're ready. |
@@ -25,6 +25,11 @@ Built with Decentraland SDK7, mobile-first.
 Eight rounds make a match, then the final scoreboard and a fresh start. Everyone takes a
 turn on stage — the actor rotates through the room in a fixed order, so nobody spectates
 all night.
+
+**Arriving first doesn't mean waiting around.** A lone visitor can play a round solo on a
+shortened clock — pick a prompt, mime it under the spotlight, then read what would have
+happened. It uses the same screens a real round does, so you learn the actual interface
+rather than a tutorial about it, and it steps aside the moment a second player shows up.
 
 ### Scoring
 

@@ -7,23 +7,29 @@ import {
   amActor,
   commitChoice,
   commitGuess,
+  commitDemoChoice,
   currentMatch,
-  endPractice,
+  demoChoice,
+  DemoPhase,
+  demoOptionIds,
+  demoPhaseNow,
+  demoRemaining01,
+  demoSecondsLeft,
+  endDemo,
   getVotesForRound,
   isOnStage,
   myChoice,
   myGuess,
   optionIds,
   phaseRemaining01,
-  practicePrompt,
   protocolOk,
-  rollPracticePrompt,
   scoreRows,
-  secondsLeft
+  secondsLeft,
+  startDemo
 } from '../game/machine'
 import { PROMPTS_BY_ID } from '../game/prompts'
 import { EMOTES, playEmote } from '../game/emotes'
-import { isHost, myUserId, networkReady, roster } from '../game/net'
+import { myUserId, networkReady, roster } from '../game/net'
 import { ranked, findScore } from '../game/scoreboard'
 import { RULES } from '../config'
 
@@ -74,7 +80,7 @@ function Sheet() {
   if (m === null) return <Connecting />
 
   if (!protocolOk()) return <OutOfDate />
-  if (practicePrompt() !== '') return <PracticeScreen />
+  if (demoPhaseNow() !== DemoPhase.Off) return <DemoScreen />
 
   switch (m.phase) {
     case Phase.Lobby:
@@ -135,26 +141,70 @@ function LobbyScreen() {
         }
       />
       <PlayerStrip />
-      <BigButton
-        label="Practice your emotes"
-        tone="muted"
-        onClick={() => rollPracticePrompt()}
-      />
-      <Caption text={isHost() ? 'you are hosting this room' : ' '} />
+      <BigButton label="Play a round solo" onClick={() => startDemo()} />
+      <Caption text={needed > 0 ? 'see how it works while you wait' : ' '} />
     </Card>
   )
 }
 
-function PracticeScreen() {
-  const prompt = PROMPTS_BY_ID[practicePrompt()]
+/**
+ * The solo walkthrough, built from the same components a real round uses — a
+ * visitor should be learning the actual interface, not a diagram of it.
+ */
+function DemoScreen() {
+  switch (demoPhaseNow()) {
+    case DemoPhase.Pick:
+      return <DemoPickScreen />
+    case DemoPhase.Act:
+      return <DemoActScreen />
+    case DemoPhase.Reveal:
+      return <DemoRevealScreen />
+    default:
+      return <Connecting />
+  }
+}
+
+function DemoPickScreen() {
+  const picked = demoChoice()
   return (
     <Card>
-      <Caption text="PRACTICE — nobody is scoring you" />
+      <Caption text="SOLO ROUND — pick one you can mime" color={C.amber} />
+      <TimerBar remaining01={demoRemaining01()} color={C.amber} />
+      {demoOptionIds().map((id) => (
+        <BigButton
+          key={id}
+          label={PROMPTS_BY_ID[id]?.text ?? id}
+          tone={picked === id ? 'selected' : 'idle'}
+          onClick={() => commitDemoChoice(id)}
+        />
+      ))}
+    </Card>
+  )
+}
+
+function DemoActScreen() {
+  const prompt = PROMPTS_BY_ID[demoChoice()]
+  return (
+    <Card>
+      <Caption text={`ACT IT OUT — ${demoSecondsLeft()}s`} color={C.amber} />
       <Title text={prompt?.text ?? '...'} color={C.mint} />
-      <EmoteWheel />
+      <TimerBar remaining01={demoRemaining01()} color={C.amber} />
+      <EmoteWheel suggestIds={prompt?.suggests ?? []} />
+    </Card>
+  )
+}
+
+function DemoRevealScreen() {
+  const prompt = PROMPTS_BY_ID[demoChoice()]
+  return (
+    <Card>
+      <Caption text="THAT'S THE ROUND" color={C.amber} />
+      <Title text={prompt?.text ?? '...'} color={C.mint} />
+      <Caption text="with other players here, everyone else now picks from those four" />
+      <Caption text="you score for every one of them who reads you right" />
       <Row2>
-        <BigButton label="New prompt" tone="muted" width="48%" onClick={() => rollPracticePrompt()} />
-        <BigButton label="Done" width="48%" onClick={() => endPractice()} />
+        <BigButton label="Again" tone="muted" width="48%" onClick={() => startDemo()} />
+        <BigButton label="Done" width="48%" onClick={() => endDemo()} />
       </Row2>
     </Card>
   )

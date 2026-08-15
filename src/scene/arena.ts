@@ -11,7 +11,16 @@ import {
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { ARENA } from '../config'
 import { Phase } from '../game/components'
-import { amActor, currentMatch, isOnStage, secondsLeft } from '../game/machine'
+import {
+  amActor,
+  currentMatch,
+  demoChoice,
+  DemoPhase,
+  demoPhaseNow,
+  demoSecondsLeft,
+  isOnStage,
+  secondsLeft
+} from '../game/machine'
 import { getPlayer } from '@dcl/sdk/players'
 import { myUserId } from '../game/net'
 import { PROMPTS_BY_ID } from '../game/prompts'
@@ -123,12 +132,18 @@ function actorSpotlight(): Entity {
 let spin = 0
 
 function spotlightSystem(dt: number): void {
-  const m = currentMatch()
-  const active = m !== null && (m.phase === Phase.Act || m.phase === Phase.Pick) && m.actorId !== ''
-  VisibilityComponent.getMutable(spotlight).visible = active
-  if (!active || m === null) return
+  const demo = demoPhaseNow()
+  // In a solo demo the visitor *is* the actor, so the stage lights up for them.
+  const demoLit = demo === DemoPhase.Pick || demo === DemoPhase.Act
 
-  const actor = getPlayer({ userId: m.actorId })
+  const m = currentMatch()
+  const matchLit = m !== null && (m.phase === Phase.Act || m.phase === Phase.Pick) && m.actorId !== ''
+
+  const active = demoLit || matchLit
+  VisibilityComponent.getMutable(spotlight).visible = active
+  if (!active) return
+
+  const actor = demoLit ? getPlayer() : m === null ? null : getPlayer({ userId: m.actorId })
   const pos = actor?.position
   spin = (spin + dt * 90) % 360
 
@@ -144,6 +159,20 @@ function spotlightSystem(dt: number): void {
 function backdropSystem(): void {
   const m = currentMatch()
   const text = TextShape.getMutable(backdropText)
+
+  // A solo demo drives the board too — otherwise the one person in the room is
+  // playing a round while the wall behind them says "waiting for players".
+  switch (demoPhaseNow()) {
+    case DemoPhase.Pick:
+      text.text = 'SOLO ROUND\npick a prompt'
+      return
+    case DemoPhase.Act:
+      text.text = `ACT IT OUT\n${demoSecondsLeft()}s`
+      return
+    case DemoPhase.Reveal:
+      text.text = (PROMPTS_BY_ID[demoChoice()]?.text ?? '?').toUpperCase()
+      return
+  }
 
   if (m === null) {
     text.text = 'WIGGLE ROOM\nconnecting...'

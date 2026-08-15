@@ -13,6 +13,17 @@ export const TIMING = {
   lobbyCountdownMs: 8_000
 } as const
 
+/**
+ * The solo demo runs on a shorter clock than a real round. Someone who just
+ * walked in alone is deciding whether this game is worth waiting for — make
+ * them sit through 45 seconds of acting to nobody and they will leave.
+ */
+export const DEMO = {
+  pickMs: 15_000,
+  actMs: 20_000,
+  revealMs: 12_000
+} as const
+
 export const SCORING = {
   correctGuess: 100,
   /** Extra points for guessing early, decaying linearly to 0 at the end of the act phase. */
@@ -26,7 +37,7 @@ export const SCORING = {
 } as const
 
 export const RULES = {
-  /** Below this the scene drops into solo practice instead of a real match. */
+  /** Below this the scene stays in the lobby, where a lone visitor can run the solo demo. */
   minPlayers: 2,
   /** Rounds in a match before the season scoreboard is shown and scores reset. */
   roundsPerMatch: 8,
