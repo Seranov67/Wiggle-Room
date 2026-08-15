@@ -1,0 +1,43 @@
+{
+  "ecs7": true,
+  "runtimeVersion": "7",
+  "display": {
+    "title": "Wiggle Room",
+    "description": "Emote charades — pick a prompt, act it out with your avatar, and guess what others are doing. No typing, just vibes.",
+    "navmapThumbnail": "images/scene-thumbnail.png",
+    "favicon": "favicon_asset"
+  },
+  "owner": "",
+  "contact": {
+    "name": "Wiggle Room",
+    "email": ""
+  },
+  "main": "bin/index.js",
+  "tags": ["game", "social", "multiplayer", "emotes", "charades"],
+  "scene": {
+    "parcels": [
+      "0,0"
+    ],
+    "base": "0,0"
+  },
+  "spawnPoints": [
+    {
+      "name": "audience",
+      "default": true,
+      "position": {
+        "x": [5, 11],
+        "y": [0, 0],
+        "z": [1, 3]
+      },
+      "cameraTarget": {
+        "x": 8,
+        "y": 1.2,
+        "z": 8
+      }
+    }
+  ],
+  "featureToggles": {
+    "voiceChat": "enabled",
+    "portableExperiences": "enabled"
+  }
+}
