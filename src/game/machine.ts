@@ -3,6 +3,7 @@ import { Match, Phase, PhaseValue, Wiggler } from './components'
 import { buildRound, makeRng, packForDay, PROMPTS_BY_ID } from './prompts'
 import { ARENA, DEMO, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
 import { ensureScore, parseScores, ScoreRow, serialiseScores } from './scoreboard'
+import { speedBonus, streakMultiplier } from './scoring'
 import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
 
 /**
@@ -388,7 +389,10 @@ function resolveRound(): void {
       if (guessed === answerId) {
         correctCount++
         row.streak = row.streak + 1
-        row.lastGained = Math.round(SCORING.correctGuess * streakMultiplier(row.streak) + speedBonus(w!.guessMs))
+        row.lastGained = Math.round(
+          SCORING.correctGuess * streakMultiplier(row.streak, SCORING.streakMultipliers) +
+            speedBonus(w!.guessMs, TIMING.actMs, SCORING.maxSpeedBonus)
+        )
         row.score += row.lastGained
       } else {
         row.streak = 0
@@ -404,16 +408,6 @@ function resolveRound(): void {
     mut.answerId = answerId
     mut.scores = serialiseScores(rows)
   })
-}
-
-function streakMultiplier(streak: number): number {
-  const table = SCORING.streakMultipliers
-  return table[Math.min(Math.max(streak, 1) - 1, table.length - 1)]
-}
-
-function speedBonus(guessMs: number): number {
-  const remaining = 1 - guessMs / TIMING.actMs
-  return SCORING.maxSpeedBonus * Math.max(0, Math.min(1, remaining))
 }
 
 // ---------------------------------------------------------------------------
