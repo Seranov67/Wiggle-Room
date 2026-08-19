@@ -5,6 +5,7 @@
   "scripts": {
     "start": "sdk-commands start",
     "deploy": "sdk-commands deploy",
+    "deploy:world": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org",
     "build": "sdk-commands build",
     "test": "node --experimental-strip-types --test \"test/*.test.ts\"",
     "upgrade-sdk": "npm install --save-dev @dcl/sdk@latest",
