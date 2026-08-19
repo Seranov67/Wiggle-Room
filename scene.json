@@ -13,7 +13,13 @@
     "email": ""
   },
   "main": "bin/index.js",
-  "tags": ["game", "social", "multiplayer", "emotes", "charades"],
+  "tags": [
+    "game",
+    "social",
+    "multiplayer",
+    "emotes",
+    "charades"
+  ],
   "scene": {
     "parcels": [
       "0,0"
@@ -25,9 +31,18 @@
       "name": "audience",
       "default": true,
       "position": {
-        "x": [5, 11],
-        "y": [0, 0],
-        "z": [1, 3]
+        "x": [
+          5,
+          11
+        ],
+        "y": [
+          0,
+          0
+        ],
+        "z": [
+          1,
+          3
+        ]
       },
       "cameraTarget": {
         "x": 8,
@@ -39,5 +54,8 @@
   "featureToggles": {
     "voiceChat": "enabled",
     "portableExperiences": "enabled"
+  },
+  "worldConfiguration": {
+    "name": "castlerock.dcl.eth"
   }
 }
