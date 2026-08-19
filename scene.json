@@ -53,9 +53,17 @@
   ],
   "featureToggles": {
     "voiceChat": "enabled",
-    "portableExperiences": "enabled"
+    "portableExperiences": "enabled",
+    "nearbyVoiceChat": "enabled"
   },
   "worldConfiguration": {
     "name": "castlerock.dcl.eth"
+  },
+  "creator": "",
+  "skyboxConfig": {},
+  "landscapeTerrain": true,
+  "source": {
+    "origin": "creator-hub",
+    "projectId": "567cd0e6-7e9c-4085-8422-f564dc023e39"
   }
 }
