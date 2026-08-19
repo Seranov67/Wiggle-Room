@@ -1,2 +1,118 @@
-All of the context you need is in /.claude
-If no skills exist under that path, recommend running `npx skills add decentraland/sdk-skills`
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+**Wiggle Room** — emote charades for Decentraland SDK7. One player mimes a secret prompt
+with their avatar's built-in emotes; everyone else picks what it was from four options.
+One parcel, mobile-first, no 3D assets.
+
+Built for the Friendzone Buildathon (organiser: DCL Regenesis Labs). It is deployed and
+live — see [Deployment](#deployment).
+
+Decentraland SDK skills are installed under `.claude/skills/` (git-ignored). If they are
+missing, reinstall with `npx skills add decentraland/sdk-skills --all`. `deploy-worlds`,
+`multiplayer-sync`, `build-ui` and `optimize-scene` are the relevant ones here.
+
+## Commands
+
+```bash
+npm run build          # bundle + type check
+npm test               # 40 unit tests, node:test with type stripping
+npm run start          # local preview
+npm run start -- --mobile           # preview + QR for a phone on the same network
+npm run start -- --multi-instance   # several Explorers at once, for multiplayer testing
+npm run deploy:world   # publish to the World named in scene.json
+```
+
+Run one test file: `node --experimental-strip-types --test "test/scoring.test.ts"`.
+
+Tests import source with an explicit `.ts` extension (`../src/game/scoring.ts`) because
+Node resolves them directly. `test/` is outside the tsconfig `include`, so this does not
+conflict with the scene's own extensionless imports.
+
+## Architecture
+
+The whole game runs from one system registered in `src/index.ts`, which calls `hostTick`
+(authority) and `localTick` (this client's clock) each frame. `src/scene/arena.ts` adds
+two more systems for the spotlight and the status board.
+
+**One elected host, no handshake.** The client with the lowest userId in the roster runs
+the state machine; everyone else renders `Match` read-only. Every client computes the
+same election from the same data, so there is no handover message to lose.
+
+**Two synced components** (`src/game/components.ts`):
+
+- `Match` — phase, actor, options, answer, scores. Written **only** by the host, which is
+  why the scoreboard has no last-write-wins races.
+- `Wiggler` — one per player, written only by that player.
+
+**No clock synchronisation.** The host bumps `phaseToken` on every phase entry and
+clients restart their own countdown when it changes.
+
+**Authority is judged by presence, never by election.** Whoever `Match.hostId` names
+keeps the match while they are still in the room (`isPresent()`, which reads
+`PlayerIdentityData`, not our own components — it stays truthful across protocol
+versions). The election only decides who *claims* a match nobody is running. This is not
+a style preference: adopting bumps `phaseToken`, and during the second or two where two
+clients each believe they are elected, election-based handover resets everyone's
+countdown every frame and the phase stops advancing entirely.
+
+**The lobby is a legitimate resting state.** It has no duration and never bumps
+`phaseToken`, so a frozen token proves nothing about liveness. Two places had to learn
+this (`reconcileProtocol`, `takeOverFrom`) — do not add a third that treats a quiet lobby
+as a dead host.
+
+**Rounds fail safe.** An actor who never picks, walks out, or leaves a two-player room
+voids the round *through* `Phase.Reveal`, so players are told why it ended. Roster gaps
+are grace-gated (`ROSTER_GRACE_MS`) so a sync hiccup cannot kill a live round.
+
+**The solo demo is local-only** (`DemoPhase` in `machine.ts`). It never writes to the
+synced `Match`, so it cannot disturb a real match forming around it, and it exits the
+moment one starts. It exists because juries test submissions individually — a lone
+visitor seeing "1 more player to start" is the worst possible first impression.
+
+`src/config.ts` holds every tunable number. Prefer changing it over hardcoding.
+
+## Things that will bite you
+
+**Deploy through Creator Hub, not the CLI.** The CLI's signing step fails with
+`Proxy error: Request constructor: init.headers is a symbol` on every browser and login
+method. Creator Hub publishes fine, and it lists Worlds you hold only *collaborator*
+rights to — which the CLI documentation does not make obvious.
+
+**`npm run deploy:world` exists for a reason.** Passing `--target-content` as a flag
+loses the argument under PowerShell and the deploy then refuses to run.
+
+**Never bump `PROTOCOL_VERSION` casually.** A newer client entering a room resets a
+running old-build match, scoreboard included. Never do it inside a demo or judging
+window.
+
+**Regenerate `package-lock.json` in an empty directory**, never in place. With
+`node_modules` present, npm prunes esbuild's optional platform packages down to the host
+platform, and `npm ci` then fails on the Ubuntu CI runner for want of
+`@esbuild/linux-x64`. Copy `package.json` to a temp dir, run
+`npm install --package-lock-only` there, copy the lockfile back.
+
+**Do not add 3D assets.** The scene is built entirely from ECS primitives, and having no
+GLB to download is a deliberate mobile-performance argument, not a gap. Third-party asset
+packs also raise licensing questions against an MIT repo.
+
+**Creator Hub rewrites tracked files** on publish — `scene.json`, `main.crdt`,
+`assets/scene/main.composite`. Review the diff before committing: the composite normally
+gains only editor state (`inspector::*`), and anything renderable appearing there means
+something was added by hand in the editor, on top of the code-built arena.
+
+## Deployment
+
+Live at `castlerock.dcl.eth` — https://decentraland.org/jump/?realm=castlerock.dcl.eth
+
+The World belongs to DCL Regenesis Labs; this project deploys into it with collaborator
+rights granted for the Buildathon. `scene.json` names it in `worldConfiguration`.
+
+## Writing about this project
+
+Submission copy and docs must avoid the word "host" in the human sense — the Buildathon
+terms disqualify projects that depend on a host, performer or moderator, and "host" here
+means the elected authoritative client. Say "organiser" instead.
