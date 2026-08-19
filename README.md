@@ -6,7 +6,7 @@ No typing, no voice required, no wearables to buy — just vibes.
 
 Built with Decentraland SDK7, mobile-first.
 
-> **Play it:** _TODO — deployed World URL_
+> **Play it:** https://decentraland.org/jump/?realm=castlerock.dcl.eth
 > **Source:** https://github.com/Seranov67/Wiggle-Room
 
 ---
@@ -78,7 +78,7 @@ npm run build
 ```
 
 Deploying to a World requires a `worldConfiguration` block in
-[`scene.json`](scene.json) naming the World you own:
+[`scene.json`](scene.json) naming a World you own or hold collaborator rights to:
 
 ```json
 "worldConfiguration": { "name": "your-name.dcl.eth" }
@@ -87,8 +87,16 @@ Deploying to a World requires a `worldConfiguration` block in
 Then:
 
 ```bash
-npm run deploy -- --target-content https://worlds-content-server.decentraland.org
+npm run deploy:world
 ```
+
+The content server is baked into that script deliberately. Passed as a flag
+(`npm run deploy -- --target-content …`) the argument is swallowed under PowerShell,
+and the deploy then refuses to run against a scene whose scene.json names a World.
+
+If the CLI’s signing step fails, publish from the **Decentraland Creator Hub**
+instead (Publish → Publish to World). It signs through a different path, and it does
+list Worlds you only hold collaborator rights to — which the CLI does not.
 
 ## How it works
 
