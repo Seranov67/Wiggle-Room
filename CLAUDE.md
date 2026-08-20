@@ -73,6 +73,19 @@ synced `Match`, so it cannot disturb a real match forming around it, and it exit
 moment one starts. It exists because juries test submissions individually — a lone
 visitor seeing "1 more player to start" is the worst possible first impression.
 
+**The roster is built once a frame and cached.** It costs two entity scans, two sets
+and a sort, and it is read about a dozen times a frame — five inside `hostTick`, once
+per scoreboard row in the UI. `invalidateRoster()` runs from `gameSystem`
+**after** `refreshSelfIdentity()`, never before: that call can be the one that first
+writes our own userId, and a roster cached ahead of it would not contain us, so the
+client would lose its own host election for a frame.
+
+**A round spends its answer, not its options.** `startRound` adds only `answerId` to
+`usedPromptIds`. Adding all four burned the featured pack four times faster and the
+day's theme quietly stopped applying around round three of eight, while the lobby went
+on advertising it. The decoys were never revealed as the answer and come from the same
+pack anyway, so barring them buys nothing.
+
 `src/config.ts` holds every tunable number. Prefer changing it over hardcoding.
 
 ## Things that will bite you
@@ -110,6 +123,13 @@ Live at `castlerock.dcl.eth` — https://decentraland.org/jump/?realm=castlerock
 
 The World belongs to DCL Regenesis Labs; this project deploys into it with collaborator
 rights granted for the Buildathon. `scene.json` names it in `worldConfiguration`.
+
+Because the World is theirs, the jump-in page credits its owner and never names the
+author of the scene. That cannot be changed and should not be. Authorship lives in the
+scene metadata instead: `owner`, `contact.name`, and the root-level `description`, which
+is the **Scene Info Panel** a visitor reads in-world — not to be confused with
+`display.description`, the one-line blurb. Editing any of them changes nothing until the
+scene is published again.
 
 ## Writing about this project
 

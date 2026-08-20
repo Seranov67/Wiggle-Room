@@ -71,7 +71,15 @@ npm install
 npm run start
 ```
 
-Then open the preview URL it prints. To type-check and bundle without launching:
+Then open the preview URL it prints. Add `-- --mobile` for a QR code you can scan from
+a phone on the same network, or `-- --multi-instance` to run several Explorers at once
+and test the multiplayer.
+
+To run the unit tests, and to type-check and bundle:
+
+```bash
+npm test
+```
 
 ```bash
 npm run build
@@ -103,10 +111,18 @@ list Worlds you only hold collaborator rights to — which the CLI does not.
 The whole game runs off one system in [`src/index.ts`](src/index.ts), which calls
 `hostTick` (authority) and `localTick` (this client's own clock) every frame.
 
-**One host, elected without a handshake.** The client with the lowest userId in the room
-runs the state machine; everyone else treats the match as read-only. Because every client
-computes the same election from the same data, there is no handover message to lose — when
-the host walks out, the next client picks the match up on its very next frame.
+**One client runs the match, and presence decides which.** Whoever the match names as
+its host keeps it for as long as they are still in the room. An election — lowest
+userId wins — only decides who *claims* a match nobody is running, which is what
+happens when the previous host walks out. There is no handover message to lose, because
+every client computes the same election from the same data.
+
+It is deliberately not the other way round. Taking the match from whoever the election
+currently favours sounds tidier, but rosters do not converge instantly: for a second
+after someone joins, two clients can each believe they are elected, and since adopting
+a match restarts the phase for everyone, they would reset the countdown every frame
+between them. A host that has actually gone is relieved immediately; one that is still
+here but has plainly stopped advancing is relieved after a generous grace.
 
 **Two synced components** ([`src/game/components.ts`](src/game/components.ts)):
 
@@ -138,11 +154,15 @@ src/
     net.ts            sync, host election, roster
     machine.ts        the match state machine
     prompts.ts        42 prompts in 4 packs + deterministic RNG
+    scoring.ts        streak and speed-bonus curves, import-free so tests can load them
     scoreboard.ts     scoreboard serialisation
     emotes.ts         the 16 base emotes
   scene/arena.ts      stage, seating, status backdrop, actor spotlight
   ui/                 bottom sheet, widgets, theme
 ```
+
+`test/` sits outside the tsconfig `include` and imports source with explicit `.ts`
+extensions, because Node resolves those files directly rather than through the bundler.
 
 Adding a prompt has one rule: it must be actable with the base emote set plus walking and
 jumping. If you can't mime it in three emotes, it doesn't belong.
