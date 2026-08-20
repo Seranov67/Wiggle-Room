@@ -141,3 +141,37 @@ describe('packForDay', () => {
     assert.ok(PACK_NAMES[packForDay(0, -5 * DAY_MS)] !== undefined)
   })
 })
+
+describe('a themed match', () => {
+  // Regression: startRound used to add all four options to the used list, not
+  // just the answer. That burned through the featured pack four times faster
+  // than necessary, so the day's theme quietly stopped applying around round
+  // three of eight while the lobby still advertised it.
+  it('stays on the featured pack for a whole eight-round match', () => {
+    const used: string[] = []
+    const packs: string[] = []
+
+    for (let round = 0; round < 8; round++) {
+      const { answerId } = buildRound(makeRng(round * 7919 + 1), used, 'internet')
+      packs.push(PROMPTS_BY_ID[answerId].pack)
+      used.push(answerId)
+      while (used.length > 12) used.shift()
+    }
+
+    for (const pack of packs) {
+      assert.equal(pack, 'internet', `drifted off theme: ${packs.join(', ')}`)
+    }
+  })
+
+  it('never repeats an answer inside one match', () => {
+    const used: string[] = []
+    const answers: string[] = []
+
+    for (let round = 0; round < 8; round++) {
+      const { answerId } = buildRound(makeRng(round * 104729 + 5), used, 'everyday')
+      assert.ok(!answers.includes(answerId), `round ${round} repeated ${answerId}`)
+      answers.push(answerId)
+      used.push(answerId)
+    }
+  })
+})

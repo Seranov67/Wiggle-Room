@@ -358,7 +358,11 @@ function startRound(roundIndex: number): void {
   const rng = makeRng(roundIndex * 7919 + m.phaseToken * 104729 + 1)
   const round = buildRound(rng, used, packForDay())
 
-  const nextUsed = used.concat(round.optionIds).slice(-RULES.recentPromptMemory)
+  // Only the answer is spent. The three decoys were never revealed as the
+  // answer, and they are drawn from the pack anyway — barring them too burns
+  // through the featured pack four times faster than necessary, and the day’s
+  // theme quietly stops being the day’s theme somewhere around round three.
+  const nextUsed = used.concat(round.answerId).slice(-RULES.recentPromptMemory)
 
   enterPhase(Phase.Pick, (mut) => {
     mut.roundIndex = roundIndex
