@@ -1,7 +1,7 @@
 import { engine } from '@dcl/sdk/ecs'
 import { buildArena } from './scene/arena'
 import { setupUi } from './ui/root'
-import { initNet, refreshSelfIdentity } from './game/net'
+import { initNet, invalidateRoster, refreshSelfIdentity } from './game/net'
 import { hostTick, localTick } from './game/machine'
 
 export function main() {
@@ -21,6 +21,7 @@ export function main() {
  */
 function gameSystem(dt: number): void {
   refreshSelfIdentity()
+  invalidateRoster()
   localTick(dt)
   hostTick(dt)
 }

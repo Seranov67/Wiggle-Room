@@ -16,6 +16,26 @@ import { Match, Wiggler, SyncId } from './components'
 let matchEntity: Entity | null = null
 let selfEntity: Entity | null = null
 
+/**
+ * The roster is derived state: two full entity scans, two sets and a sort. It
+ * is also read a dozen times a frame — five times inside `hostTick` alone, and
+ * once per scoreboard row by the UI, which re-renders continuously. Computing
+ * the identical list that often is pure waste on a device that has to hold a
+ * frame rate, so it is built once a frame and reused.
+ */
+let rosterCache: RosterEntry[] | null = null
+let presentCache: Set<string> | null = null
+
+/**
+ * Drop the cached roster. Called once a frame from the game system, and
+ * deliberately *after* `refreshSelfIdentity`: that call can be the thing which
+ * writes our own userId, and a roster cached before it would be missing us.
+ */
+export function invalidateRoster(): void {
+  rosterCache = null
+  presentCache = null
+}
+
 export function initNet(): void {
   matchEntity = engine.addEntity()
   syncEntity(matchEntity, [Match.componentId], SyncId.Match)
@@ -78,12 +98,16 @@ export function refreshSelfIdentity(): void {
  * away stick around in the engine, and scoring them would be wrong.
  */
 function presentUserIds(): Set<string> {
+  if (presentCache !== null) return presentCache
+
   const present = new Set<string>()
   for (const [, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if (identity.address !== '') present.add(identity.address.toLowerCase())
   }
   const me = myUserId()
   if (me !== '') present.add(me.toLowerCase())
+
+  presentCache = present
   return present
 }
 
@@ -109,6 +133,8 @@ export type RosterEntry = {
  * so the ordering is identical on every client.
  */
 export function roster(): RosterEntry[] {
+  if (rosterCache !== null) return rosterCache
+
   const present = presentUserIds()
   const seen = new Set<string>()
   const out: RosterEntry[] = []
@@ -121,6 +147,8 @@ export function roster(): RosterEntry[] {
   }
 
   out.sort((a, b) => (a.userId.toLowerCase() < b.userId.toLowerCase() ? -1 : 1))
+
+  rosterCache = out
   return out
 }
 
