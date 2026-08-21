@@ -56,7 +56,7 @@ function Root() {
   const nativeControls = height < 720
   const sheetWidth = portrait
     ? width - px(24)
-    : Math.min(width - px(24), nativeControls ? 720 : 860)
+    : Math.min(width - px(24), nativeControls ? 560 : 860)
 
   return (
     <ScreenInsetArea
@@ -65,7 +65,11 @@ function Root() {
         height: '100%',
         flexDirection: 'column',
         justifyContent: 'flex-end',
-        alignItems: 'center'
+        // Landscape puts the player's own avatar dead centre, and a sheet
+        // parked there covers the one thing the game asks you to look at: the
+        // emotes you just triggered. Pushed to the left, the middle stays clear
+        // and the client's own buttons on the right stay reachable.
+        alignItems: nativeControls && !portrait ? 'flex-start' : 'center'
       }}
     >
       <UiEntity
@@ -73,7 +77,7 @@ function Root() {
           width: sheetWidth,
           flexDirection: 'column',
           alignItems: 'center',
-          margin: { bottom: px(18) }
+          margin: { bottom: px(18), left: nativeControls && !portrait ? px(24) : 0 }
         }}
       >
         <Sheet />

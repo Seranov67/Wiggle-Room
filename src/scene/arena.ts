@@ -103,6 +103,9 @@ function backdrop(): void {
   backdropText = engine.addEntity()
   Transform.create(backdropText, {
     position: Vector3.create(ARENA.stage.x, 3.4, 0.85),
+    // Turned to face the arena. Without this the board reads mirrored from
+    // where players actually stand, which is the only place it is read from.
+    rotation: Quaternion.fromEulerDegrees(0, 180, 0),
     scale: Vector3.create(1, 1, 1)
   })
   TextShape.create(backdropText, {
