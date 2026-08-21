@@ -17,7 +17,10 @@ README.md
 *.fbx
 *.zip
 *.rar
-*.md
+# Not *.md: SCENE_README.md is the in-world Scene Info panel, i.e. real
+# scene content, and a blanket markdown rule silently keeps it out of the
+# deploy. Exclude the docs by name instead.
+CLAUDE.md
 src
 cursor.config
 cursorignore
