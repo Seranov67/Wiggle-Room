@@ -130,6 +130,7 @@ function actorSpotlight(): Entity {
 }
 
 let spin = 0
+let spotlightLit = false
 
 function spotlightSystem(dt: number): void {
   const demo = demoPhaseNow()
@@ -140,7 +141,12 @@ function spotlightSystem(dt: number): void {
   const matchLit = m !== null && (m.phase === Phase.Act || m.phase === Phase.Pick) && m.actorId !== ''
 
   const active = demoLit || matchLit
-  VisibilityComponent.getMutable(spotlight).visible = active
+  // Same reason as the board: writing the same value still dirties the
+  // component, and an inactive spotlight would pay that cost every frame.
+  if (active !== spotlightLit) {
+    spotlightLit = active
+    VisibilityComponent.getMutable(spotlight).visible = active
+  }
   if (!active) return
 
   const actor = demoLit ? getPlayer() : m === null ? null : getPlayer({ userId: m.actorId })
@@ -156,53 +162,54 @@ function spotlightSystem(dt: number): void {
   t.rotation = Quaternion.fromEulerDegrees(0, spin, 0)
 }
 
-function backdropSystem(): void {
-  const m = currentMatch()
-  const text = TextShape.getMutable(backdropText)
-
-  // A solo demo drives the board too — otherwise the one person in the room is
-  // playing a round while the wall behind them says "waiting for players".
+/**
+ * What the board should say right now. Pure — it decides the string, and the
+ * system below is the only thing that touches the component.
+ */
+function boardText(): string {
   switch (demoPhaseNow()) {
     case DemoPhase.Pick:
-      text.text = 'SOLO ROUND\npick a prompt'
-      return
+      return 'SOLO ROUND\npick a prompt'
     case DemoPhase.Act:
-      text.text = `ACT IT OUT\n${demoSecondsLeft()}s`
-      return
+      return `ACT IT OUT\n${demoSecondsLeft()}s`
     case DemoPhase.Reveal:
-      text.text = (PROMPTS_BY_ID[demoChoice()]?.text ?? '?').toUpperCase()
-      return
+      return (PROMPTS_BY_ID[demoChoice()]?.text ?? '?').toUpperCase()
   }
 
-  if (m === null) {
-    text.text = 'WIGGLE ROOM\nconnecting...'
-    return
-  }
+  const m = currentMatch()
+  if (m === null) return 'WIGGLE ROOM\nconnecting...'
 
   switch (m.phase) {
     case Phase.Lobby:
-      text.text = `WIGGLE ROOM\nTODAY: ${PACK_NAMES[packForDay()].toUpperCase()}`
-      break
+      return `WIGGLE ROOM\nTODAY: ${PACK_NAMES[packForDay()].toUpperCase()}`
     case Phase.Starting:
-      text.text = `starting in ${secondsLeft()}`
-      break
+      return `starting in ${secondsLeft()}`
     case Phase.Pick:
-      if (!amActor()) text.text = 'the actor is choosing...'
-      else text.text = isOnStage(myUserId()) ? 'YOUR TURN\npick a prompt' : 'YOUR TURN\nstep onto the pink stage'
-      break
+      if (!amActor()) return 'the actor is choosing...'
+      return isOnStage(myUserId()) ? 'YOUR TURN\npick a prompt' : 'YOUR TURN\nstep onto the pink stage'
     case Phase.Act:
-      text.text = amActor() ? `ACT IT OUT\n${secondsLeft()}s` : `WHAT IS IT?\n${secondsLeft()}s`
-      break
+      return amActor() ? `ACT IT OUT\n${secondsLeft()}s` : `WHAT IS IT?\n${secondsLeft()}s`
     case Phase.Reveal:
-      text.text = m.answerId === '' ? 'round voided' : (PROMPTS_BY_ID[m.answerId]?.text ?? '?').toUpperCase()
-      break
+      return m.answerId === '' ? 'round voided' : (PROMPTS_BY_ID[m.answerId]?.text ?? '?').toUpperCase()
     case Phase.Intermission:
-      text.text = 'next up...'
-      break
+      return 'next up...'
     case Phase.MatchEnd:
-      text.text = 'FINAL SCORES'
-      break
+      return 'FINAL SCORES'
+    default:
+      return 'WIGGLE ROOM'
   }
+}
+
+let shownText = ''
+
+function backdropSystem(): void {
+  const next = boardText()
+  // Only ever write when the words change. `getMutable` marks the component
+  // dirty whether or not the value differs, and a TextShape marked dirty every
+  // frame makes the engine rebuild 3D text sixty times a second for nothing.
+  if (next === shownText) return
+  shownText = next
+  TextShape.getMutable(backdropText).text = next
 }
 
 function paint(entity: Entity, color: Color4, emissiveIntensity = 0): void {

@@ -15,6 +15,12 @@ export const C = {
   clear: Color4.create(0, 0, 0, 0)
 }
 
+type CanvasInfo = { width: number; height: number; portrait: boolean; scale: number; touch: boolean }
+
+let sizeCache: CanvasInfo | null = null
+let cachedWidth = -1
+let cachedHeight = -1
+
 /**
  * Everything on screen is sized off one number so the layout holds on a 375pt
  * phone and on a 2560px monitor without a second set of styles.
@@ -26,13 +32,23 @@ export function canvas(): { width: number; height: number; portrait: boolean; sc
   const info = UiCanvasInformation.getOrNull(engine.RootEntity)
   const width = info?.width ?? 1280
   const height = info?.height ?? 720
+
+  // Layout is a pure function of the canvas size, and this is called dozens of
+  // times per frame — six times per emote tile alone, sixteen tiles deep. It
+  // used to allocate a fresh object every time, which is a lot of garbage for
+  // an answer that only changes when the window does.
+  if (sizeCache !== null && cachedWidth === width && cachedHeight === height) return sizeCache
   const portrait = height > width
   // 1100, not 900: a tablet in landscape is 1024 wide and is emphatically a
   // touch device. Being wrong on a small desktop window costs us a slightly
   // chunky UI; being wrong on a tablet costs buttons too small to hit.
   const touch = width < 1100
   const scale = Math.max(0.78, Math.min(1.35, width / 1280))
-  return { width, height, portrait, scale, touch }
+
+  cachedWidth = width
+  cachedHeight = height
+  sizeCache = { width, height, portrait, scale, touch }
+  return sizeCache
 }
 
 /** Font size in virtual px, floored so labels stay legible on a phone. */
