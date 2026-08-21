@@ -46,8 +46,17 @@ export function setupUi(): void {
  * informational is a line of text above it.
  */
 function Root() {
-  const { portrait, width } = canvas()
-  const sheetWidth = Math.min(width - px(24), portrait ? width - px(24) : 860)
+  const { portrait, width, height } = canvas()
+
+  // The mobile client runs landscape and paints its own controls over the
+  // screen edges — movement lower-left, jump and the action buttons on the
+  // right. A sheet sized for a desktop reaches underneath them, and the last
+  // column of the emote grid stops being tappable at all. A short viewport is
+  // the tell: desktops are rarely under 720 tall, landscape phones always are.
+  const nativeControls = height < 720
+  const sheetWidth = portrait
+    ? width - px(24)
+    : Math.min(width - px(24), nativeControls ? 720 : 860)
 
   return (
     <ScreenInsetArea
