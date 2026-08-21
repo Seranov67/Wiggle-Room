@@ -51,11 +51,14 @@ games ported there assume a keyboard. Wiggle Room is built the other way round:
 
 - **No typing.** Every input in the game is a single tap. The one "skill" input — firing
   an emote — has no timing window at all.
-- **Everything lives in the bottom third.** The UI is one bottom sheet, because that's the
-  only region a thumb reaches while the top of the screen shows the avatars.
-- **Big targets.** Primary buttons land at 59pt on any touch-width screen — comfortably
-  above the 44–48pt minimum Apple and Google both recommend. The emote grid is 4 columns
-  on touch, 8 on desktop.
+- **The interface stays out of the way.** It is one sheet along the bottom, and on the
+  mobile client — which runs landscape — it sits against the left edge and stops short of
+  the middle. That is not a style choice: the client paints its own movement and action
+  buttons over the screen edges, and puts your avatar dead centre, so a sheet sized for a
+  desktop covers both the controls and the performance you are meant to be watching.
+- **The grid follows the shape of the screen.** Four columns when the screen is tall,
+  eight when it is wide. On a landscape phone the scarce axis is height, so eight columns
+  across two rows costs half the vertical space that four across four rows would.
 - **One scale factor.** Type and spacing derive from a single canvas-width scale with a
   hard floor, so a 375pt phone and a 2560px monitor share one layout.
 - **Interactive in about a second.** The arena is built entirely from ECS primitives —
@@ -169,10 +172,20 @@ jumping. If you can't mime it in three emotes, it doesn't belong.
 
 ## Mobile QA
 
-Status: **not yet run.** Results go in this table once tested on device.
+Tested on an Android phone in the Decentraland mobile app. **The client runs
+landscape**, at 1280x576 — which is the opposite shape to the tall narrow screen a
+phone UI is usually designed for, and it changed several layout decisions.
 
 | Check | Result |
 | --- | --- |
+| Scene loads and the arena renders | ✅ |
+| Solo round end to end — pick, act, reveal | ✅ |
+| Emote suggestions highlight the right ones | ✅ verified against three prompts |
+| Status board readable from inside the arena | ✅ |
+| Actor visible while performing | ✅ after moving the spotlight to the floor |
+| Sheet clears the client’s own buttons | ✅ after narrowing it |
+| Frame rate while moving | 38–52 fps |
+| Slowdown near the stage | ⚠ under investigation — suspected fill rate |
 | 2 players — full match end to end | ☐ |
 | 3 players | ☐ |
 | 4 players | ☐ |
@@ -182,13 +195,10 @@ Status: **not yet run.** Results go in this table once tested on device.
 | Host leaves mid-match (handover) | ☐ |
 | Two-player room: actor leaves → void → lobby | ☐ |
 | Reconnect after backgrounding the app | ☐ |
-| Portrait 360×640 — no clipping | ☐ |
-| Portrait 390×844 — no clipping | ☐ |
-| 16-emote grid fits with prompt + timer above it | ☐ |
-| Landscape | ☐ |
 | Desktop 1280×800 | ☐ |
-| Remote actor position visible to the host (stage gate) | ☐ |
-| Frame rate during a 4-player act phase | ☐ |
+
+Everything still unchecked needs a second player, which is the honest reason it is
+unchecked rather than an oversight.
 
 ## Tech
 

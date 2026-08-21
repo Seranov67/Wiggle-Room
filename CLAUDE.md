@@ -117,6 +117,37 @@ packs also raise licensing questions against an MIT repo.
 gains only editor state (`inspector::*`), and anything renderable appearing there means
 something was added by hand in the editor, on top of the code-built arena.
 
+## Testing on a device
+
+The mobile client runs **landscape, 1280x576**. That is the shape to design for; the
+portrait branch in `theme.ts` never fires there. The client also paints its own
+movement, jump and action buttons over the screen edges, and puts the player’s own
+avatar dead centre — so the sheet is deliberately narrow and pushed left, or it covers
+both the controls and the thing the game asks you to look at.
+
+The workflow that actually finds things: record the screen for 60–90 seconds, drop the
+file in `qa/` (git-ignored, dclignored), then use `ffmpeg` — it is installed. Contact
+sheets are what make it usable:
+
+```bash
+ffmpeg -v error -i qa/video.mp4 -vf "fps=1,scale=340:-1,tile=6x5" -frames:v 1 qa/sheet.png
+```
+
+One image, thirty moments, readable in a single look. Raise the fps and drop the tile
+count to inspect a transition frame by frame.
+
+**Do not measure frame rate with `mpdecimate`.** It counts frames that did not change,
+and a player standing still in front of a static card produces those honestly. It
+reported "29.5 fps" for a session that was actually running at 38–52 — the slowest
+stretches were the reveal screen sitting still. Only measure across stretches where
+the camera is definitely moving.
+
+**And do not fix anything from a single screenshot.** Two changes in one session were
+wrong for that reason: the status board was "mirrored" only because the screenshot was
+taken from outside the parcel looking back at one-sided text, and turning it would
+have broken the reading from everywhere players actually stand. A recording carries
+the context a still frame throws away.
+
 ## Deployment
 
 Live at `castlerock.dcl.eth` — https://decentraland.org/jump/?realm=castlerock.dcl.eth
