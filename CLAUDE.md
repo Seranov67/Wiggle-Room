@@ -131,6 +131,13 @@ is the **Scene Info Panel** a visitor reads in-world — not to be confused with
 `display.description`, the one-line blurb. Editing any of them changes nothing until the
 scene is published again.
 
+Creator Hub keeps its own copy of that panel in a root `SCENE_README.md`, which is what
+its editor field reads and writes. That file is **not** uploaded and is **not** merged
+into the deployed metadata — verified by comparing the deployed `description` against
+both, byte for byte. So `scene.json` is the one that matters; treat `SCENE_README.md` as
+editor state that happens to be committed, and keep the two in step by hand if you edit
+the panel through the Hub.
+
 ## Writing about this project
 
 Submission copy and docs must avoid the word "host" in the human sense — the Buildathon
