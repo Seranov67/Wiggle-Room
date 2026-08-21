@@ -67,7 +67,7 @@ function stage(): void {
     scale: Vector3.create(ARENA.stageRadius * 2, 0.24, ARENA.stageRadius * 2)
   })
   MeshRenderer.setCylinder(e, 1, 1)
-  paint(e, STAGE, 0.45)
+  paint(e, STAGE, 0.15)
 }
 
 /** A low ring of blocks that reads as seating and keeps guessers facing in. */
@@ -128,10 +128,10 @@ function actorSpotlight(): Entity {
   const e = engine.addEntity()
   Transform.create(e, {
     position: Vector3.create(ARENA.stage.x, 0.3, ARENA.stage.z),
-    scale: Vector3.create(1.8, 0.04, 1.8)
+    scale: Vector3.create(1.5, 0.04, 1.5)
   })
   MeshRenderer.setCylinder(e, 1, 1)
-  paint(e, GLOW, 0.8)
+  paint(e, GLOW, 0.3)
   VisibilityComponent.create(e, { visible: false })
   return e
 }
