@@ -116,12 +116,19 @@ function backdrop(): void {
   })
 }
 
-/** A halo that parks itself over whoever is on stage. */
+/**
+ * A pool of light at the feet of whoever is performing.
+ *
+ * It used to hover overhead, and on a phone that put a wide bright disc
+ * directly between the camera and the actor — hiding the very thing the game
+ * asks everyone to watch. On the ground it marks the performer just as clearly
+ * and occludes nothing.
+ */
 function actorSpotlight(): Entity {
   const e = engine.addEntity()
   Transform.create(e, {
-    position: Vector3.create(ARENA.stage.x, 2.6, ARENA.stage.z),
-    scale: Vector3.create(1.4, 0.06, 1.4)
+    position: Vector3.create(ARENA.stage.x, 0.3, ARENA.stage.z),
+    scale: Vector3.create(1.8, 0.04, 1.8)
   })
   MeshRenderer.setCylinder(e, 1, 1)
   paint(e, GLOW, 0.8)
@@ -156,7 +163,7 @@ function spotlightSystem(dt: number): void {
   const t = Transform.getMutable(spotlight)
   t.position = Vector3.create(
     pos ? pos.x : ARENA.stage.x,
-    (pos ? pos.y : 0) + 2.4,
+    (pos ? pos.y : 0) + 0.06,
     pos ? pos.z : ARENA.stage.z
   )
   t.rotation = Quaternion.fromEulerDegrees(0, spin, 0)

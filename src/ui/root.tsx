@@ -199,6 +199,7 @@ function DemoActScreen() {
       <Caption text={`ACT IT OUT — ${demoSecondsLeft()}s`} color={C.amber} />
       <Title text={prompt?.text ?? '...'} color={C.mint} />
       <TimerBar remaining01={demoRemaining01()} color={C.amber} />
+      <Caption text="tap emotes to act it out — the mint ones read best for this" />
       <EmoteWheel suggestIds={prompt?.suggests ?? []} />
     </Card>
   )
@@ -208,10 +209,11 @@ function DemoRevealScreen() {
   const prompt = PROMPTS_BY_ID[demoChoice()]
   return (
     <Card>
-      <Caption text="THAT'S THE ROUND" color={C.amber} />
+      <Caption text="THAT WAS A ROUND — WITHOUT THE BEST PART" color={C.amber} />
       <Title text={prompt?.text ?? '...'} color={C.mint} />
-      <Caption text="with other players here, everyone else now picks from those four" />
-      <Caption text="you score for every one of them who reads you right" />
+      <Caption text="you just mimed that. with people here, they'd have been" />
+      <Caption text="watching you and picking from the same four options" />
+      <Caption text="you score for every one who reads you right" color={C.mint} />
       <Row2>
         <BigButton label="Again" tone="muted" width="48%" onClick={() => startDemo()} />
         <BigButton label="Done" width="48%" onClick={() => endDemo()} />
@@ -276,6 +278,7 @@ function ActorActScreen() {
       <Caption text={`ACT IT OUT — ${secondsLeft()}s`} />
       <Title text={prompt?.text ?? '...'} color={C.mint} />
       <TimerBar remaining01={phaseRemaining01()} color={C.hot} />
+      <Caption text="tap emotes — the others are guessing which one you mean" />
       <EmoteWheel suggestIds={prompt?.suggests ?? []} />
     </Card>
   )
