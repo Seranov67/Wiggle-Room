@@ -34,7 +34,11 @@ import { ranked, findScore } from '../game/scoreboard'
 import { RULES } from '../config'
 
 export function setupUi(): void {
-  ReactEcsRenderer.setUiRenderer(() => <Root />)
+  // 'none' because the tree already wraps itself in ScreenInsetArea. Since 7.26
+  // the renderer applies the device safe area by default, so leaving it on the
+  // default meant every measurement below was taken inside an area that had
+  // already been inset once — and the layout was tuned against those numbers.
+  ReactEcsRenderer.setUiRenderer(() => <Root />, { screenInset: 'none' })
 }
 
 /**

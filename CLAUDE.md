@@ -19,7 +19,7 @@ missing, reinstall with `npx skills add decentraland/sdk-skills --all`. `deploy-
 
 ```bash
 npm run build          # bundle + type check
-npm test               # 40 unit tests, node:test with type stripping
+npm test               # 42 unit tests, node:test with type stripping
 npm run start          # local preview
 npm run start -- --mobile           # preview + QR for a phone on the same network
 npm run start -- --multi-instance   # several Explorers at once, for multiplayer testing
