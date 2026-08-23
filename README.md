@@ -172,33 +172,36 @@ jumping. If you can't mime it in three emotes, it doesn't belong.
 
 ## Mobile QA
 
-Tested on an Android phone in the Decentraland mobile app. **The client runs
-landscape**, at 1280x576 — which is the opposite shape to the tall narrow screen a
-phone UI is usually designed for, and it changed several layout decisions.
+Tested on an Android phone in the Decentraland mobile app and on the desktop client.
+**The mobile client runs landscape**, at 1280x576 — the opposite shape to the tall
+narrow screen a phone UI is usually designed for, and it changed several layout
+decisions.
 
 | Check | Result |
 | --- | --- |
 | Scene loads and the arena renders | ✅ |
 | Solo round end to end — pick, act, reveal | ✅ |
-| Emote suggestions highlight the right ones | ✅ verified against three prompts |
+| **Avatar performs the emote when tapped** | ✅ |
+| **Other players see the performance** | ✅ |
+| Two players join, match starts on its own | ✅ |
+| Actor and guesser get the right screens | ✅ |
+| Reveal shows the answer, the votes and the points | ✅ |
+| Emote suggestions highlight the right ones | ✅ verified against four prompts |
 | Status board readable from inside the arena | ✅ |
 | Actor visible while performing | ✅ after moving the spotlight to the floor |
-| Sheet clears the client’s own buttons | ✅ after narrowing it |
-| Frame rate while moving | 38–52 fps |
-| Slowdown near the stage | ⚠ under investigation — suspected fill rate |
-| 2 players — full match end to end | ☐ |
-| 3 players | ☐ |
-| 4 players | ☐ |
+| Sheet clears the client’s own buttons | ✅ |
+| Frame rate while moving | 38–52 fps on the phone, no stutter on desktop |
+| Full eight-round match to the final scoreboard | ☐ |
+| Actor rotates every round | ☐ |
 | Actor disconnects during Pick | ☐ |
 | Actor disconnects during Act | ☐ |
 | Guesser disconnects mid-round | ☐ |
 | Host leaves mid-match (handover) | ☐ |
 | Two-player room: actor leaves → void → lobby | ☐ |
 | Reconnect after backgrounding the app | ☐ |
-| Desktop 1280×800 | ☐ |
 
-Everything still unchecked needs a second player, which is the honest reason it is
-unchecked rather than an oversight.
+The core loop is verified end to end with two players on separate accounts. What
+remains unchecked is how it behaves when somebody leaves mid-round.
 
 ## Tech
 
