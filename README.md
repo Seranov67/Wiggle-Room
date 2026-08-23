@@ -56,9 +56,10 @@ games ported there assume a keyboard. Wiggle Room is built the other way round:
   the middle. That is not a style choice: the client paints its own movement and action
   buttons over the screen edges, and puts your avatar dead centre, so a sheet sized for a
   desktop covers both the controls and the performance you are meant to be watching.
-- **The grid follows the shape of the screen.** Four columns when the screen is tall,
-  eight when it is wide. On a landscape phone the scarce axis is height, so eight columns
-  across two rows costs half the vertical space that four across four rows would.
+- **The emote wheel is a palette, not a row of buttons.** Twenty emotes, ten across on a
+  wide screen and five when it is narrow, on tiles shorter than a tap target needs to be
+  for something you press once. On a landscape phone the scarce axis is height, and every
+  pixel the wheel gives back is a pixel the performance keeps.
 - **One scale factor.** Type and spacing derive from a single canvas-width scale with a
   hard floor, so a 375pt phone and a 2560px monitor share one layout.
 - **Interactive in about a second.** The arena is built entirely from ECS primitives —
@@ -159,7 +160,7 @@ src/
     prompts.ts        42 prompts in 4 packs + deterministic RNG
     scoring.ts        streak and speed-bonus curves, import-free so tests can load them
     scoreboard.ts     scoreboard serialisation
-    emotes.ts         the 16 base emotes
+    emotes.ts         20 emotes — 16 expressive, 4 that mime an action
   scene/arena.ts      stage, seating, status backdrop, actor spotlight
   ui/                 bottom sheet, widgets, theme
 ```

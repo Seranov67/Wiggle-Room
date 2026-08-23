@@ -38,9 +38,10 @@ The whole game runs from one system registered in `src/index.ts`, which calls `h
 (authority) and `localTick` (this client's clock) each frame. `src/scene/arena.ts` adds
 two more systems for the spotlight and the status board.
 
-**One elected host, no handshake.** The client with the lowest userId in the roster runs
-the state machine; everyone else renders `Match` read-only. Every client computes the
-same election from the same data, so there is no handover message to lose.
+**One host, no handshake.** Exactly one client runs the state machine; everyone else
+renders `Match` read-only. Which client that is comes from the rule below, not from the
+election alone — and no handover message exists to be lost, because every client derives
+the answer from data it already has.
 
 **Two synced components** (`src/game/components.ts`):
 
@@ -87,6 +88,31 @@ on advertising it. The decoys were never revealed as the answer and come from th
 pack anyway, so barring them buys nothing.
 
 `src/config.ts` holds every tunable number. Prefer changing it over hardcoding.
+
+## Interface rules learned on a device
+
+**Emoji do not render.** Decentraland's interface font has no emoji glyphs. Tiles in the
+emote wheel used to draw one above the label; it showed as nothing and cost a line of
+height on every tile. Labels are text only.
+
+**There is no bold.** `UiFontType` is `sans-serif | serif | monospace` and nothing else,
+so weight is not available — contrast and size are the only levers.
+
+**Four options go in a 2x2 grid, never a column** (`OptionGrid`). Stacked full-width they
+took two thirds of a landscape phone screen, and what they covered was the actor. The
+same component serves the guess screen, both pick screens and the reveal.
+
+**Once an answer is locked the buttons go away.** The choice cannot be changed, and that
+is exactly the moment the guesser should be watching rather than reading. The screen
+drops from 66% of the height to 17%.
+
+**Say who, not how many.** The reveal names the player who read you; the intermission
+names who is on next. `readersOf` exists for this. A count is a report, a name is an
+event, and they cost the same to render.
+
+**The scoreboard outlives the roster.** Someone who leaves mid-match still has a score, so
+`nameFor` remembers display names — otherwise the final standings show a raw wallet
+address next to the points of the person who just left.
 
 ## Things that will bite you
 
