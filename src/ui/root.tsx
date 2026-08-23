@@ -17,6 +17,7 @@ import {
   demoSecondsLeft,
   endDemo,
   getVotesForRound,
+  readersOf,
   isOnStage,
   myChoice,
   myGuess,
@@ -344,10 +345,7 @@ function RevealScreen() {
   return (
     <Card>
       <Title text={answer?.text ?? m.answerId} color={C.mint} />
-      <Caption
-        text={amActor() ? `+${gained} for the performance` : guessedRight ? `correct  +${gained}` : 'not this time'}
-        color={amActor() ? C.amber : guessedRight ? C.mint : C.dim}
-      />
+      <Caption text={revealLine(m.actorId, m.roundIndex, m.answerId, gained)} color={revealColour(guessedRight)} />
       <OptionGrid
         ids={optionIds()}
         toneFor={(id) => {
@@ -588,6 +586,32 @@ function pickCaption(onStage: boolean, hasPicked: boolean): string {
 
 /** Why the round died — the actor walking out and the actor going quiet look
  *  identical on the wire, so we tell them apart by who is still in the room. */
+/**
+ * The one line that carries the round's outcome.
+ *
+ * Names beat numbers here. Being told "dendon read you" is a social event;
+ * being shown a vote count is a report. Both cost the same to render.
+ */
+function revealLine(actorId: string, roundIndex: number, answerId: string, gained: number): string {
+  const readers = readersOf(actorId, roundIndex, answerId)
+  const guessers = Math.max(0, roster().length - 1)
+
+  if (amActor()) {
+    if (readers.length === 0) return `nobody read you  +${gained}`
+    if (readers.length === 1) return `${nameOf(readers[0])} read you  +${gained}`
+    return `${readers.length} of ${guessers} read you  +${gained}`
+  }
+
+  const iGotIt = readers.some((id) => id.toLowerCase() === myUserId().toLowerCase())
+  if (iGotIt) return `you read ${nameOf(actorId)}  +${gained}`
+  return readers.length > 0 ? `not this time — ${readers.length} of ${guessers} got it` : 'nobody got that one'
+}
+
+function revealColour(guessedRight: boolean): Color4 {
+  if (amActor()) return C.amber
+  return guessedRight ? C.mint : C.dim
+}
+
 function voidReason(actorId: string): string {
   const players = roster()
   // Checked first: when the room empties out, "the actor didn't choose" is not

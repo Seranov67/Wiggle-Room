@@ -650,7 +650,9 @@ function enterDemoPhase(phase: DemoPhaseValue): void {
 }
 
 export function startDemo(): void {
-  const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)))
+  // The lobby advertises today's theme two lines above the button that starts
+  // this round, so the round had better be on it.
+  const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)), [], packForDay())
   demoOptions = round.optionIds
   demoChoiceId = ''
   enterDemoPhase(DemoPhase.Pick)
@@ -701,6 +703,24 @@ export function scoreRows(): ScoreRow[] {
  * Returns the number of guessers who picked each option in the given round.
  * Includes only players who are still in the roster (present in the scene).
  */
+/**
+ * The userIds of everyone who read the actor correctly this round.
+ *
+ * The reveal knows the counts already, but a count is a number and a name is
+ * an event — "donyyden read you" lands where "2" does not.
+ */
+export function readersOf(actorId: string, roundIndex: number, answerId: string): string[] {
+  if (answerId === '') return []
+  const actorLow = actorId.toLowerCase()
+  const out: string[] = []
+  for (const p of roster()) {
+    if (p.userId.toLowerCase() === actorLow) continue
+    const w = Wiggler.getOrNull(p.entity)
+    if (w !== null && w.roundIndex === roundIndex && w.guessId === answerId) out.push(p.userId)
+  }
+  return out
+}
+
 export function getVotesForRound(actorId: string, roundIndex: number): Record<string, number> {
   const votes: Record<string, number> = {}
   const actorLow = actorId.toLowerCase()
