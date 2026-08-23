@@ -161,7 +161,13 @@ function LobbyScreen() {
       />
       <PlayerStrip />
       <BigButton label="Play a round solo" onClick={() => startDemo()} />
-      <Caption text={needed > 0 ? 'see how it works while you wait' : ' '} />
+      {/* Alone, the most useful thing the screen can say is how to stop being
+          alone. The World name is short enough to read out loud, which a link
+          is not. */}
+      <Caption
+        text={needed > 0 ? 'better with people — invite one to castlerock.dcl.eth' : ' '}
+        color={needed > 0 ? C.dim : C.dim}
+      />
     </Card>
   )
 }
@@ -308,7 +314,7 @@ function GuessScreen() {
           nothing left to do — and this is exactly the moment the guesser should
           be watching the performance. They go away and the screen clears. */}
       {locked ? (
-        <Caption text="watch the rest of the performance" />
+        <Caption text={`watch ${nameOf(m.actorId)} finish`} />
       ) : (
         <OptionGrid
           ids={optionIds()}
@@ -371,7 +377,7 @@ function MatchEndScreen() {
       <Title text={`${winner} wins`} color={C.amber} />
       <ScoreStrip full />
       <Caption text={`tomorrow's theme — ${PACK_NAMES[packForDay(1)]}`} color={C.mint} />
-      <Caption text="new match starting..." />
+      <Caption text="stay for the next one — the stage starts over" />
     </Card>
   )
 }
@@ -630,5 +636,28 @@ function nextUpCaption(): string {
   const m = currentMatch()
   if (m === null) return ''
   const remaining = RULES.roundsPerMatch - (m.roundIndex + 1)
-  return remaining > 0 ? `${remaining} round${remaining === 1 ? '' : 's'} left` : 'final scores coming up'
+  if (remaining <= 0) return 'final scores coming up'
+  // Who is about to be watched matters more than how many rounds are left —
+  // and if it is you, that is the one thing worth knowing in this four-second
+  // gap.
+  const next = nextActorName(m.actorId)
+  const tail = `${remaining} round${remaining === 1 ? '' : 's'} left`
+  if (next === null) return tail
+  return next === 'you' ? `you're on next — ${tail}` : `${next} is on next — ${tail}`
+}
+
+/** The player after `prevActorId` in the userId ring, as a display name. */
+function nextActorName(prevActorId: string): string | null {
+  const list = roster()
+  if (list.length === 0) return null
+  const prev = prevActorId.toLowerCase()
+  let idx = -1
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].userId.toLowerCase() === prev) {
+      idx = i
+      break
+    }
+  }
+  const next = list[(idx + 1) % list.length]
+  return next.userId.toLowerCase() === myUserId().toLowerCase() ? 'you' : next.name
 }
