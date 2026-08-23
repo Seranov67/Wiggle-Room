@@ -29,7 +29,7 @@ import {
 } from '../game/machine'
 import { PACK_NAMES, packForDay, PROMPTS_BY_ID } from '../game/prompts'
 import { EMOTES, playEmote } from '../game/emotes'
-import { myUserId, networkReady, roster } from '../game/net'
+import { myUserId, nameFor, networkReady, roster } from '../game/net'
 import { ranked, findScore } from '../game/scoreboard'
 import { RULES } from '../config'
 
@@ -571,7 +571,9 @@ function nameOf(userId: string): string {
   for (const p of roster()) {
     if (p.userId.toLowerCase() === target) return p.name
   }
-  return `${userId.slice(0, 6)}…`
+  // They have left, but their score is still on the board — use the name we
+  // saw while they were here rather than showing a wallet address.
+  return nameFor(userId) ?? `${userId.slice(0, 6)}…`
 }
 
 /**

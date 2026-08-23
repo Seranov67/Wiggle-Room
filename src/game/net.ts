@@ -143,13 +143,30 @@ export function roster(): RosterEntry[] {
     const id = w.userId.toLowerCase()
     if (id === '' || !present.has(id) || seen.has(id)) continue
     seen.add(id)
-    out.push({ entity, userId: w.userId, name: w.name || 'Anon' })
+    const name = w.name || 'Anon'
+    if (name !== 'Anon') knownNames.set(id, name)
+    out.push({ entity, userId: w.userId, name })
   }
 
   out.sort((a, b) => (a.userId.toLowerCase() < b.userId.toLowerCase() ? -1 : 1))
 
   rosterCache = out
   return out
+}
+
+/**
+ * Display names we have seen, kept after the player leaves.
+ *
+ * The scoreboard outlives the roster: a player who walks out mid-match still
+ * has a score, and looking their name up in the roster then fails. Without
+ * this the final standings list a raw wallet address next to the points of the
+ * person who just left.
+ */
+const knownNames = new Map<string, string>()
+
+/** The display name for a userId, remembered even after they leave the room. */
+export function nameFor(userId: string): string | null {
+  return knownNames.get(userId.toLowerCase()) ?? null
 }
 
 /** Lowest userId present. Returns '' when the roster is not usable yet. */
