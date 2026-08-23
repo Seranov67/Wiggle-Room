@@ -59,6 +59,8 @@ let demoPhase: DemoPhaseValue = 0
 let demoElapsedMs = 0
 let demoOptions: string[] = []
 let demoChoiceId = ''
+/** Answers this visitor has already been shown, so "Again" is actually again. */
+let demoUsed: string[] = []
 
 export function phaseDurations(phase: PhaseValue): number {
   switch (phase) {
@@ -651,8 +653,11 @@ function enterDemoPhase(phase: DemoPhaseValue): void {
 
 export function startDemo(): void {
   // The lobby advertises today's theme two lines above the button that starts
-  // this round, so the round had better be on it.
-  const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)), [], packForDay())
+  // this round, so the round had better be on it. And "Again" has to mean a
+  // different prompt — a solo visitor pressing it twice and getting the same
+  // one learns that the library is small, which is the opposite of the point.
+  const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)), demoUsed, packForDay())
+  demoUsed = demoUsed.concat(round.answerId).slice(-RULES.recentPromptMemory)
   demoOptions = round.optionIds
   demoChoiceId = ''
   enterDemoPhase(DemoPhase.Pick)

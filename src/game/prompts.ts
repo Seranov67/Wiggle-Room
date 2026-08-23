@@ -46,11 +46,11 @@ export function packForDay(dayOffset = 0, nowMs: number = Date.now()): PackId {
 
 export const PROMPTS: Prompt[] = [
   // ---- everyday ----------------------------------------------------------
-  { id: 'ev-monday', pack: 'everyday', text: 'Monday morning', suggests: ['headexplode', 'shrug'] },
+  { id: 'ev-monday', pack: 'everyday', text: 'Monday morning', suggests: ['headexplode', 'shrug', 'dontsee'] },
   { id: 'ev-lottery', pack: 'everyday', text: 'Winning the lottery', suggests: ['money', 'fistpump', 'disco'] },
   { id: 'ev-rent', pack: 'everyday', text: 'Rent is due', suggests: ['money', 'dontsee', 'shrug'] },
   { id: 'ev-lost', pack: 'everyday', text: 'Completely lost', suggests: ['shrug', 'raiseHand'] },
-  { id: 'ev-latebus', pack: 'everyday', text: 'Missing the last bus', suggests: ['raiseHand', 'headexplode'] },
+  { id: 'ev-latebus', pack: 'everyday', text: 'Missing the last bus', suggests: ['raiseHand', 'wave', 'headexplode'] },
   { id: 'ev-firstdate', pack: 'everyday', text: 'A very bad first date', suggests: ['kiss', 'dontsee', 'shrug'] },
   { id: 'ev-coffee', pack: 'everyday', text: 'Out of coffee', suggests: ['headexplode', 'dontsee'] },
   { id: 'ev-raise', pack: 'everyday', text: 'Asking for a raise', suggests: ['raiseHand', 'money', 'shrug'] },
@@ -66,7 +66,7 @@ export const PROMPTS: Prompt[] = [
   { id: 'pa-crush', pack: 'party', text: 'Spotting your crush', suggests: ['kiss', 'wave', 'dontsee'] },
   { id: 'pa-bill', pack: 'party', text: 'Who pays the bill?', suggests: ['money', 'dontsee', 'shrug'] },
   { id: 'pa-birthday', pack: 'party', text: 'Surprise birthday party', suggests: ['clap', 'handsair', 'kiss'] },
-  { id: 'pa-karaoke', pack: 'party', text: 'Karaoke disaster', suggests: ['raiseHand', 'headexplode', 'clap'] },
+  { id: 'pa-karaoke', pack: 'party', text: 'Karaoke disaster', suggests: ['raiseHand', 'headexplode', 'dontsee'] },
   { id: 'pa-latearrival', pack: 'party', text: 'Arriving way too early', suggests: ['shrug', 'wave'] },
   { id: 'pa-robotdance', pack: 'party', text: 'The robot dance-off', suggests: ['robot', 'tektonik'] },
   { id: 'pa-encore', pack: 'party', text: 'Demanding an encore', suggests: ['clap', 'fistpump', 'raiseHand'] },
@@ -77,7 +77,7 @@ export const PROMPTS: Prompt[] = [
   { id: 'in-crypto', pack: 'internet', text: 'Crypto goes to zero', suggests: ['money', 'headexplode', 'shrug'] },
   { id: 'in-airdrop', pack: 'internet', text: 'Free airdrop!', suggests: ['money', 'fistpump', 'clap'] },
   { id: 'in-lag', pack: 'internet', text: 'Terrible connection', suggests: ['robot', 'shrug', 'headexplode'] },
-  { id: 'in-touchgrass', pack: 'internet', text: 'Touch grass', suggests: ['dontsee', 'shrug', 'wave'] },
+  { id: 'in-touchgrass', pack: 'internet', text: 'Touch grass', suggests: ['wave', 'shrug', 'raiseHand'] },
   { id: 'in-livestream', pack: 'internet', text: 'Live on stream', suggests: ['wave', 'clap', 'handsair'] },
   { id: 'in-unfollow', pack: 'internet', text: 'Getting unfollowed', suggests: ['dontsee', 'shrug'] },
   { id: 'in-ai', pack: 'internet', text: 'The AI took my job', suggests: ['robot', 'headexplode', 'shrug'] },
