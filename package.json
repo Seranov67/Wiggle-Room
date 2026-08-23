@@ -4,6 +4,7 @@
   "description": "Emote charades in Decentraland — act out a prompt with your avatar, everyone else guesses.",
   "scripts": {
     "start": "sdk-commands start",
+    "start:mcp": "sdk-commands start --mcp",
     "deploy": "sdk-commands deploy",
     "deploy:world": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org",
     "build": "sdk-commands build",
