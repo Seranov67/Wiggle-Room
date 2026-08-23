@@ -13,6 +13,9 @@
     "email": ""
   },
   "main": "bin/index.js",
+  "requiredPermissions": [
+    "ALLOW_TO_TRIGGER_AVATAR_EMOTE"
+  ],
   "tags": [
     "game",
     "social",

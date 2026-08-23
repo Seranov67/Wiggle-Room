@@ -174,3 +174,20 @@ the panel through the Hub.
 Submission copy and docs must avoid the word "host" in the human sense — the Buildathon
 terms disqualify projects that depend on a host, performer or moderator, and "host" here
 means the elected authoritative client. Say "organiser" instead.
+
+## The permission the whole game depends on
+
+`triggerEmote` does nothing at all unless `scene.json` declares:
+
+```json
+"requiredPermissions": ["ALLOW_TO_TRIGGER_AVATAR_EMOTE"]
+```
+
+It fails silently — no error, no console warning, the avatar simply stands
+there. This scene shipped without it for its entire life, which meant the one
+mechanic the game is built on had never once run. Everything else can be
+verified by reading the screen; this can only be verified by watching an avatar
+actually move.
+
+Emotes also only play while the player is standing still — walking or jumping
+interrupts them.
