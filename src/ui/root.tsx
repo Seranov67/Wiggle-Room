@@ -396,7 +396,12 @@ function MatchEndScreen() {
  */
 function EmoteWheel(props: { suggestIds?: string[] } = {}) {
   const { touch } = canvas()
-  const tile = touch ? '23.5%' : '11.5%'
+  // Ten across on a wide screen, five when it is narrow. The wheel is a
+  // palette, not a primary control: its tiles are shorter than a button you
+  // press once, because these get pressed often from a resting hand and the
+  // height they give back is height the performance keeps.
+  const tile = touch ? '19%' : '9.2%'
+  const tileHeight = Math.round(tapHeight() * 0.72)
   const suggested = new Set(props.suggestIds ?? [])
   return (
     <UiEntity
@@ -415,8 +420,8 @@ function EmoteWheel(props: { suggestIds?: string[] } = {}) {
             key={e.id}
             uiTransform={{
               width: tile,
-              height: tapHeight(),
-              margin: { top: px(4), bottom: px(4) },
+              height: tileHeight,
+              margin: { top: px(3), bottom: px(3) },
               justifyContent: 'center',
               alignItems: 'center',
               borderRadius: px(12),
@@ -424,12 +429,12 @@ function EmoteWheel(props: { suggestIds?: string[] } = {}) {
               borderColor: isSuggested ? C.mint : C.line,
               pointerFilter: 'block'
             }}
-            uiBackground={{ color: isSuggested ? Color4.create(C.mint.r, C.mint.g, C.mint.b, 0.12) : C.panelSolid }}
+            uiBackground={{ color: isSuggested ? Color4.create(C.mint.r, C.mint.g, C.mint.b, 0.16) : C.clear }}
             onMouseDown={() => playEmote(e.id)}
           >
             <Label
-              value={`${e.glyph}\n${e.label}`}
-              fontSize={fs(13)}
+              value={e.label}
+              fontSize={fs(14)}
               color={isSuggested ? C.mint : C.text}
               textAlign="middle-center"
               uiTransform={{ width: '100%', height: '100%' }}

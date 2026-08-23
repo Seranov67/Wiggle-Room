@@ -5,32 +5,45 @@ import { triggerEmote } from '~system/RestrictedActions'
  * so the wheel looks the same for a brand new guest as for a whale.
  *
  * `id` is what the renderer expects in `triggerEmote({ predefinedEmote })`.
+ * That call types it as a plain string, so a misspelling fails exactly as
+ * silently as a missing permission does — every id here is checked against
+ * the client's own list.
  */
 export type Emote = {
   id: string
-  /** Short enough to fit a thumb-sized button. */
+  /**
+   * Short enough to fit one line of a narrow tile. The wheel is twenty across
+   * and the label is all there is to read, so every character costs width that
+   * the performance would otherwise get to keep.
+   */
   label: string
-  /** Fallback glyph so the wheel is readable before art exists. */
-  glyph: string
 }
 
 export const EMOTES: Emote[] = [
-  { id: 'wave', label: 'Wave', glyph: '👋' },
-  { id: 'clap', label: 'Clap', glyph: '👏' },
-  { id: 'raiseHand', label: 'Raise', glyph: '🙋' },
-  { id: 'shrug', label: 'Shrug', glyph: '🤷' },
-  { id: 'dontsee', label: "Can't look", glyph: '🙈' },
-  { id: 'headexplode', label: 'Mind blown', glyph: '🤯' },
-  { id: 'money', label: 'Money', glyph: '💸' },
-  { id: 'kiss', label: 'Kiss', glyph: '😘' },
-  { id: 'fistpump', label: 'Yes!', glyph: '✊' },
-  { id: 'hammer', label: 'Hammer', glyph: '🔨' },
-  { id: 'robot', label: 'Robot', glyph: '🤖' },
-  { id: 'disco', label: 'Disco', glyph: '🕺' },
-  { id: 'handsair', label: 'Hands up', glyph: '🙌' },
-  { id: 'tektonik', label: 'Tektonik', glyph: '💃' },
-  { id: 'dab', label: 'Dab', glyph: '😎' },
-  { id: 'tik', label: 'Tik', glyph: '🎵' }
+  { id: 'wave', label: 'Wave' },
+  { id: 'clap', label: 'Clap' },
+  { id: 'raiseHand', label: 'Raise' },
+  { id: 'shrug', label: 'Shrug' },
+  { id: 'dontsee', label: 'Hide' },
+  { id: 'headexplode', label: 'Shock' },
+  { id: 'money', label: 'Money' },
+  { id: 'kiss', label: 'Kiss' },
+  { id: 'fistpump', label: 'Yes' },
+  { id: 'hammer', label: 'Hammer' },
+  { id: 'robot', label: 'Robot' },
+  { id: 'disco', label: 'Disco' },
+  { id: 'handsair', label: 'Hands' },
+  { id: 'tektonik', label: 'Tek' },
+  { id: 'dab', label: 'Dab' },
+  { id: 'tik', label: 'Tik' },
+
+  // Action emotes. Everything above reacts to something; none of it can mime
+  // the thing itself — no door to open, no punch, no fall — which left several
+  // prompts to be acted entirely through the face.
+  { id: 'openDoor', label: 'Door' },
+  { id: 'throw', label: 'Throw' },
+  { id: 'punch', label: 'Punch' },
+  { id: 'knockOut', label: 'KO' }
 ]
 
 /**

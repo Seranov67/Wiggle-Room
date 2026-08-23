@@ -73,7 +73,7 @@ export const PROMPTS: Prompt[] = [
 
   // ---- internet ----------------------------------------------------------
   { id: 'in-viral', pack: 'internet', text: 'Going viral', suggests: ['fistpump', 'handsair', 'dab'] },
-  { id: 'in-cringe', pack: 'internet', text: 'Deleting an old post', suggests: ['dontsee', 'headexplode'] },
+  { id: 'in-cringe', pack: 'internet', text: 'Deleting an old post', suggests: ['throw', 'dontsee', 'headexplode'] },
   { id: 'in-crypto', pack: 'internet', text: 'Crypto goes to zero', suggests: ['money', 'headexplode', 'shrug'] },
   { id: 'in-airdrop', pack: 'internet', text: 'Free airdrop!', suggests: ['money', 'fistpump', 'clap'] },
   { id: 'in-lag', pack: 'internet', text: 'Terrible connection', suggests: ['robot', 'shrug', 'headexplode'] },
@@ -84,13 +84,13 @@ export const PROMPTS: Prompt[] = [
   { id: 'in-dab', pack: 'internet', text: 'A very outdated meme', suggests: ['dab', 'tik', 'shrug'] },
 
   // ---- movies ------------------------------------------------------------
-  { id: 'mo-hero', pack: 'movies', text: 'Superhero landing', suggests: ['fistpump', 'raiseHand'] },
-  { id: 'mo-horror', pack: 'movies', text: 'Do not open that door', suggests: ['dontsee', 'headexplode'] },
+  { id: 'mo-hero', pack: 'movies', text: 'Superhero landing', suggests: ['punch', 'fistpump', 'raiseHand'] },
+  { id: 'mo-horror', pack: 'movies', text: 'Do not open that door', suggests: ['openDoor', 'dontsee', 'headexplode'] },
   { id: 'mo-romance', pack: 'movies', text: 'The airport goodbye', suggests: ['wave', 'kiss'] },
-  { id: 'mo-heist', pack: 'movies', text: 'The heist goes wrong', suggests: ['money', 'headexplode', 'dontsee'] },
-  { id: 'mo-robot', pack: 'movies', text: 'Rise of the machines', suggests: ['robot', 'fistpump'] },
+  { id: 'mo-heist', pack: 'movies', text: 'The heist goes wrong', suggests: ['money', 'throw', 'knockOut'] },
+  { id: 'mo-robot', pack: 'movies', text: 'Rise of the machines', suggests: ['robot', 'punch', 'knockOut'] },
   { id: 'mo-oscar', pack: 'movies', text: 'Winning an award', suggests: ['clap', 'kiss', 'raiseHand'] },
-  { id: 'mo-training', pack: 'movies', text: 'The training montage', suggests: ['fistpump', 'hammer', 'tektonik'] },
+  { id: 'mo-training', pack: 'movies', text: 'The training montage', suggests: ['punch', 'fistpump', 'tektonik'] },
   { id: 'mo-ghost', pack: 'movies', text: 'Seeing a ghost', suggests: ['dontsee', 'headexplode', 'shrug'] },
   { id: 'mo-dance', pack: 'movies', text: 'The big dance finale', suggests: ['disco', 'handsair', 'clap'] },
   { id: 'mo-sequel', pack: 'movies', text: 'A pointless sequel', suggests: ['shrug', 'dontsee'] }

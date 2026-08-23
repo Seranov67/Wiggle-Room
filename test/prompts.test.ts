@@ -18,7 +18,8 @@ describe('the prompt library', () => {
     // which does not resolve outside the Decentraland runtime.
     const emoteIds = new Set([
       'wave', 'clap', 'raiseHand', 'shrug', 'dontsee', 'headexplode', 'money', 'kiss',
-      'fistpump', 'hammer', 'robot', 'disco', 'handsair', 'tektonik', 'dab', 'tik'
+      'fistpump', 'hammer', 'robot', 'disco', 'handsair', 'tektonik', 'dab', 'tik',
+      'openDoor', 'throw', 'punch', 'knockOut'
     ])
     for (const p of PROMPTS) {
       for (const id of p.suggests) {
