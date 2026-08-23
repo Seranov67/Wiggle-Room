@@ -188,14 +188,11 @@ function DemoPickScreen() {
     <Card>
       <Caption text="SOLO ROUND — pick one you can mime" color={C.amber} />
       <TimerBar remaining01={demoRemaining01()} color={C.amber} />
-      {demoOptionIds().map((id) => (
-        <BigButton
-          key={id}
-          label={PROMPTS_BY_ID[id]?.text ?? id}
-          tone={picked === id ? 'selected' : 'idle'}
-          onClick={() => commitDemoChoice(id)}
-        />
-      ))}
+      <OptionGrid
+        ids={demoOptionIds()}
+        toneFor={(id) => (picked === id ? 'selected' : 'idle')}
+        onPick={(id) => commitDemoChoice(id)}
+      />
     </Card>
   )
 }
@@ -263,14 +260,11 @@ function ActorPickScreen() {
     <Card>
       <Caption text={pickCaption(onStage, picked !== '')} color={onStage ? C.dim : C.amber} />
       <TimerBar remaining01={phaseRemaining01()} color={onStage ? C.hot : C.amber} />
-      {optionIds().map((id) => (
-        <BigButton
-          key={id}
-          label={PROMPTS_BY_ID[id]?.text ?? id}
-          tone={picked === id ? 'selected' : 'idle'}
-          onClick={() => commitChoice(id)}
-        />
-      ))}
+      <OptionGrid
+        ids={optionIds()}
+        toneFor={(id) => (picked === id ? 'selected' : 'idle')}
+        onPick={(id) => commitChoice(id)}
+      />
     </Card>
   )
 }
@@ -300,17 +294,27 @@ function GuessScreen() {
 
   return (
     <Card>
-      <Caption text={locked ? 'locked in — watch the others' : `what is ${nameOf(m.actorId)} doing? ${secondsLeft()}s`} />
+      <Caption
+        text={
+          locked
+            ? `locked in — ${PROMPTS_BY_ID[guess]?.text ?? '...'}`
+            : `what is ${nameOf(m.actorId)} doing? ${secondsLeft()}s`
+        }
+        color={locked ? C.mint : C.dim}
+      />
       <TimerBar remaining01={phaseRemaining01()} color={locked ? C.mint : C.hot} />
-      {optionIds().map((id) => (
-        <BigButton
-          key={id}
-          label={PROMPTS_BY_ID[id]?.text ?? id}
-          tone={locked ? (guess === id ? 'selected' : 'muted') : 'idle'}
-          disabled={locked}
-          onClick={() => commitGuess(id)}
+      {/* Once the answer is locked it cannot be changed, so the buttons have
+          nothing left to do — and this is exactly the moment the guesser should
+          be watching the performance. They go away and the screen clears. */}
+      {locked ? (
+        <Caption text="watch the rest of the performance" />
+      ) : (
+        <OptionGrid
+          ids={optionIds()}
+          toneFor={() => 'idle'}
+          onPick={(id) => commitGuess(id)}
         />
-      ))}
+      )}
     </Card>
   )
 }
@@ -514,6 +518,41 @@ function PlayerStrip() {
           }}
           uiBackground={{ avatarTexture: { userId: p.userId } }}
         />
+      ))}
+    </UiEntity>
+  )
+}
+
+/**
+ * Four prompt options as a 2x2 grid rather than a stack.
+ *
+ * Stacked, they ate two thirds of a landscape phone screen — and in a game
+ * about watching someone mime, the thing they covered was the performer. Two
+ * rows of two halves that, and the options are still wide enough for the
+ * longest prompt in the library.
+ */
+function OptionGrid(props: {
+  ids: string[]
+  toneFor: (id: string) => 'idle' | 'selected' | 'muted'
+  disabled?: boolean
+  onPick: (id: string) => void
+}) {
+  const rows = [props.ids.slice(0, 2), props.ids.slice(2, 4)]
+  return (
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
+      {rows.map((row) => (
+        <Row2>
+          {row.map((id) => (
+            <BigButton
+              key={id}
+              label={PROMPTS_BY_ID[id]?.text ?? id}
+              tone={props.toneFor(id)}
+              width="48.5%"
+              disabled={props.disabled}
+              onClick={() => props.onPick(id)}
+            />
+          ))}
+        </Row2>
       ))}
     </UiEntity>
   )

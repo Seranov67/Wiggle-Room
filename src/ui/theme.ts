@@ -3,7 +3,7 @@ import { Color4 } from '@dcl/sdk/math'
 
 export const C = {
   ink: Color4.fromHexString('#12101aff'),
-  panel: Color4.fromHexString('#1d1a2bee'),
+  panel: Color4.fromHexString('#1d1a2bcc'),
   panelSolid: Color4.fromHexString('#1d1a2bff'),
   line: Color4.fromHexString('#3a3454ff'),
   text: Color4.fromHexString('#f4f1ffff'),
