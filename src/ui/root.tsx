@@ -343,29 +343,22 @@ function RevealScreen() {
 
   return (
     <Card>
-      <Caption text="it was" />
       <Title text={answer?.text ?? m.answerId} color={C.mint} />
       <Caption
         text={amActor() ? `+${gained} for the performance` : guessedRight ? `correct  +${gained}` : 'not this time'}
         color={amActor() ? C.amber : guessedRight ? C.mint : C.dim}
       />
-      {optionIds().map((id) => {
-        const isAnswer = id === m.answerId
-        const myPick = !amActor() && myGuess(m.roundIndex) === id
-        let tone: 'correct' | 'wrong' | 'muted' | 'idle' = 'muted'
-        if (isAnswer) tone = 'correct'
-        else if (myPick) tone = 'wrong'
-        const count = votes[id] ?? 0
-        return (
-          <BigButton
-            key={id}
-            label={PROMPTS_BY_ID[id]?.text ?? id}
-            tone={tone}
-            onClick={() => {}}
-            badge={count > 0 ? `${count} voted` : undefined}
-          />
-        )
-      })}
+      <OptionGrid
+        ids={optionIds()}
+        toneFor={(id) => {
+          if (id === m.answerId) return 'correct'
+          if (!amActor() && myGuess(m.roundIndex) === id) return 'wrong'
+          return 'muted'
+        }}
+        badgeFor={(id) => ((votes[id] ?? 0) > 0 ? `${votes[id]}` : undefined)}
+        disabled
+        onPick={() => {}}
+      />
       <ScoreStrip />
     </Card>
   )
@@ -533,7 +526,8 @@ function PlayerStrip() {
  */
 function OptionGrid(props: {
   ids: string[]
-  toneFor: (id: string) => 'idle' | 'selected' | 'muted'
+  toneFor: (id: string) => 'idle' | 'selected' | 'correct' | 'wrong' | 'muted'
+  badgeFor?: (id: string) => string | undefined
   disabled?: boolean
   onPick: (id: string) => void
 }) {
@@ -547,6 +541,7 @@ function OptionGrid(props: {
               key={id}
               label={PROMPTS_BY_ID[id]?.text ?? id}
               tone={props.toneFor(id)}
+              badge={props.badgeFor ? props.badgeFor(id) : undefined}
               width="48.5%"
               disabled={props.disabled}
               onClick={() => props.onPick(id)}
