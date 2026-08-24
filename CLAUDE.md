@@ -19,18 +19,37 @@ missing, reinstall with `npx skills add decentraland/sdk-skills --all`. `deploy-
 
 ```bash
 npm run build          # bundle + type check
-npm test               # 42 unit tests, node:test with type stripping
+npm test               # 62 unit tests, node:test with type stripping
 npm run start          # local preview
 npm run start -- --mobile           # preview + QR for a phone on the same network
 npm run start -- --multi-instance   # several Explorers at once, for multiplayer testing
 npm run deploy:world   # publish to the World named in scene.json
 ```
 
-Run one test file: `node --experimental-strip-types --test "test/scoring.test.ts"`.
+Run one test file:
+`node --experimental-strip-types --import ./test/harness/loader.mjs --test "test/scoring.test.ts"`.
 
 Tests import source with an explicit `.ts` extension (`../src/game/scoring.ts`) because
 Node resolves them directly. `test/` is outside the tsconfig `include`, so this does not
 conflict with the scene's own extensionless imports.
+
+**The state machine is testable without a renderer** (`test/harness/`). `loader.mjs` is a
+`module.registerHooks` resolver that points `@dcl/sdk/*` at the fakes in that directory
+and appends `.ts` to the scene's extensionless imports. It also carries a `?w=` tag from
+a module to everything it imports, so `import('…/machine.ts?w=2')` yields a **second,
+independent copy of the whole `src` graph** — which is what makes host handover testable:
+each simulated client gets its own module-level host state and its own clock, while the
+fake SDK stays a singleton and gives them one shared world. `room.ts` drives them frame
+by frame; its `tick` mirrors `gameSystem` in `index.ts`, and a test asserts it still does.
+
+Anything the fake does not implement fails loudly at resolve time rather than silently, so
+adding an SDK call to `src/game/` may mean adding one to `test/harness/`.
+
+Two limits worth knowing. Sync is instant and lossless here, so this proves decisions, not
+transport — a roster gap is simulated by removing a player, which is the part that
+actually reaches the state machine. And type stripping cannot tell a type import from a
+value import, so a type crossing a module boundary in the tested graph needs
+`import type` or the module fails to link.
 
 ## Architecture
 
@@ -81,11 +100,23 @@ per scoreboard row in the UI. `invalidateRoster()` runs from `gameSystem`
 writes our own userId, and a roster cached ahead of it would not contain us, so the
 client would lose its own host election for a frame.
 
-**A round spends its answer, not its options.** `startRound` adds only `answerId` to
-`usedPromptIds`. Adding all four burned the featured pack four times faster and the
-day's theme quietly stopped applying around round three of eight, while the lobby went
-on advertising it. The decoys were never revealed as the answer and come from the same
-pack anyway, so barring them buys nothing.
+**A returning player is in the engine twice.** Synced state outlives the client that
+wrote it, so someone who leaves and comes back has two `Wiggler` entities: the one they
+abandoned and the one their new session made. `roster()` keeps whichever carries the
+newer `roundIndex`. Taking the engine's first pick chose the corpse about as often as
+the player, and the round could then see neither their pick nor their guess — they were
+present, on screen, and unable to score.
+
+**A round spends the prompt it actually played.** `buildRound` only *nominates* an
+answer; the actor mimes whichever of the four options they choose, so every option is a
+candidate answer. Spending the nominee at `startRound` therefore burned a prompt nobody
+performed and left the performed one free to come straight back — `avoidIds` did not bar
+it as a decoy either, and the same prompt was the answer three rounds running in an
+eight-round match. So `resolveRound` spends the committed answer, once it is known, and
+`buildRound` filters all four options against `usedPromptIds`. It is still **one prompt
+per round**: spending four would burn the featured pack four times faster and the day's
+theme would quietly stop applying around round three of eight, while the lobby went on
+advertising it.
 
 `src/config.ts` holds every tunable number. Prefer changing it over hardcoding.
 

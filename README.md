@@ -163,10 +163,18 @@ src/
     emotes.ts         20 emotes — 16 expressive, 4 that mime an action
   scene/arena.ts      stage, seating, status backdrop, actor spotlight
   ui/                 bottom sheet, widgets, theme
+test/
+  harness/            a fake SDK and a room of simulated clients
+  machine.test.ts     matches played out frame by frame, including badly
 ```
 
 `test/` sits outside the tsconfig `include` and imports source with explicit `.ts`
 extensions, because Node resolves those files directly rather than through the bundler.
+
+The state machine needs no renderer to test. `test/harness/loader.mjs` points `@dcl/sdk/*`
+at fakes and gives each simulated client its own copy of the `src` module graph, so two
+clients can genuinely disagree about who is running the match — which is the only way
+handover is worth testing at all.
 
 Adding a prompt has one rule: it must be actable with the base emote set plus walking and
 jumping. If you can't mime it in three emotes, it doesn't belong.
@@ -192,17 +200,31 @@ decisions.
 | Actor visible while performing | ✅ after moving the spotlight to the floor |
 | Sheet clears the client’s own buttons | ✅ |
 | Frame rate while moving | 38–52 fps on the phone, no stutter on desktop |
-| Full eight-round match to the final scoreboard | ☐ |
-| Actor rotates every round | ☐ |
-| Actor disconnects during Pick | ☐ |
-| Actor disconnects during Act | ☐ |
-| Guesser disconnects mid-round | ☐ |
-| Host leaves mid-match (handover) | ☐ |
-| Two-player room: actor leaves → void → lobby | ☐ |
-| Reconnect after backgrounding the app | ☐ |
+| Full eight-round match to the final scoreboard | 🧪 |
+| Actor rotates every round | 🧪 |
+| Actor disconnects during Pick | 🧪 |
+| Actor disconnects during Act | 🧪 |
+| Guesser disconnects mid-round | 🧪 |
+| Host leaves mid-match (handover) | 🧪 |
+| Two-player room: actor leaves → void → lobby | 🧪 |
+| Reconnect after backgrounding the app | 🧪 |
 
-The core loop is verified end to end with two players on separate accounts. What
-remains unchecked is how it behaves when somebody leaves mid-round.
+✅ verified on a device · 🧪 covered by the simulated-room tests, not yet on a device
+
+The core loop is verified end to end with two players on separate accounts.
+
+Everything about somebody *leaving* is verified a rung lower down, because reproducing it
+by hand needs several accounts and a stopwatch: `test/harness/` runs the real state
+machine against a fake SDK, several simulated clients to a shared world, and drives it
+frame by frame. That is a claim about the game's decisions, not about the network — sync
+there is instant and lossless. It found two faults that had survived every play session:
+
+- **The same prompt could be the answer three rounds running.** `buildRound` nominates an
+  answer, but the actor mimes whichever of the four options they choose, so the round was
+  spending a prompt nobody performed and leaving the performed one free to come back.
+- **A player who left and rejoined could not score.** They are in the engine twice — the
+  entity they abandoned and the one their new session made — and the roster was picking
+  whichever came first, which was often the abandoned one.
 
 ## Tech
 
