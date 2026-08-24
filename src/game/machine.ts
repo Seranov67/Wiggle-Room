@@ -1,8 +1,10 @@
 import { getPlayer } from '@dcl/sdk/players'
-import { Match, Phase, PhaseValue, Wiggler } from './components'
+import { Match, Phase, Wiggler } from './components'
+import type { PhaseValue } from './components'
 import { buildRound, makeRng, packForDay, PROMPTS_BY_ID } from './prompts'
 import { ARENA, DEMO, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config'
-import { ensureScore, parseScores, ScoreRow, serialiseScores } from './scoreboard'
+import { ensureScore, parseScores, serialiseScores } from './scoreboard'
+import type { ScoreRow } from './scoreboard'
 import { speedBonus, streakMultiplier } from './scoring'
 import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
 
@@ -360,18 +362,16 @@ function startRound(roundIndex: number): void {
   const rng = makeRng(roundIndex * 7919 + m.phaseToken * 104729 + 1)
   const round = buildRound(rng, used, packForDay())
 
-  // Only the answer is spent. The three decoys were never revealed as the
-  // answer, and they are drawn from the pack anyway — barring them too burns
-  // through the featured pack four times faster than necessary, and the day’s
-  // theme quietly stops being the day’s theme somewhere around round three.
-  const nextUsed = used.concat(round.answerId).slice(-RULES.recentPromptMemory)
-
+  // Nothing is spent here. `buildRound` nominates an answer, but the actor is
+  // free to mime any of the four, so the prompt this round actually uses is not
+  // known until they commit — see `resolveRound`. Spending the nominee instead
+  // burned a prompt nobody performed and left the performed one free to come
+  // back: three rounds running on the same prompt, in an eight-round match.
   enterPhase(Phase.Pick, (mut) => {
     mut.roundIndex = roundIndex
     mut.actorId = actor.userId
     mut.optionIds = round.optionIds.join(',')
     mut.answerId = ''
-    mut.usedPromptIds = nextUsed.join(',')
   })
 }
 
@@ -462,9 +462,17 @@ function resolveRound(): void {
     actorRow.score += actorRow.lastGained
   }
 
+  // A round spends the prompt it actually played, and only once it is known.
+  // One per round, exactly as before — barring the decoys as well would burn
+  // through the featured pack four times faster than necessary, and the day's
+  // theme would quietly stop being the day's theme around round three.
+  const used = m.usedPromptIds === '' ? [] : m.usedPromptIds.split(',')
+  const nextUsed = answerId === '' ? used : used.concat(answerId).slice(-RULES.recentPromptMemory)
+
   enterPhase(Phase.Reveal, (mut) => {
     mut.answerId = answerId
     mut.scores = serialiseScores(rows)
+    mut.usedPromptIds = nextUsed.join(',')
   })
 }
 
@@ -626,15 +634,23 @@ function demoTick(dtSeconds: number): void {
   demoElapsedMs += dtSeconds * 1000
 
   switch (demoPhase) {
-    case DemoPhase.Pick:
+    case DemoPhase.Pick: {
       // Committing early skips the wait; running the clock out picks for them,
       // because a demo that stalls teaches the wrong thing about the game.
-      if (demoChoiceId !== '') enterDemoPhase(DemoPhase.Act)
-      else if (demoElapsedMs >= DEMO.pickMs) {
+      const timedOut = demoElapsedMs >= DEMO.pickMs
+      if (demoChoiceId === '' && timedOut) {
         demoChoiceId = demoOptions[Math.floor(Math.random() * demoOptions.length)] ?? ''
-        enterDemoPhase(DemoPhase.Act)
       }
+      if (demoChoiceId === '' && !timedOut) return
+
+      // Spend what they mimed, not what `buildRound` nominated — the same rule
+      // `resolveRound` follows, and the reason it matters here is "Again":
+      // the visitor picks one of four, so recording the nominee left the prompt
+      // they just performed free to come straight back.
+      if (demoChoiceId !== '') demoUsed = demoUsed.concat(demoChoiceId).slice(-RULES.recentPromptMemory)
+      enterDemoPhase(DemoPhase.Act)
       return
+    }
 
     case DemoPhase.Act:
       if (demoElapsedMs >= DEMO.actMs) enterDemoPhase(DemoPhase.Reveal)
@@ -657,7 +673,6 @@ export function startDemo(): void {
   // different prompt — a solo visitor pressing it twice and getting the same
   // one learns that the library is small, which is the opposite of the point.
   const round = buildRound(makeRng(Math.floor(Math.random() * 0xffffffff)), demoUsed, packForDay())
-  demoUsed = demoUsed.concat(round.answerId).slice(-RULES.recentPromptMemory)
   demoOptions = round.optionIds
   demoChoiceId = ''
   enterDemoPhase(DemoPhase.Pick)

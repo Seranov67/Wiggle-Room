@@ -103,6 +103,25 @@ describe('buildRound', () => {
     }
   })
 
+  // The actor mimes whichever of the four they pick, so every option is a
+  // candidate answer. A prompt already played this match therefore must not be
+  // offered as a decoy either — it came straight back as the answer, and the
+  // same prompt was performed three rounds running in an eight-round match.
+  it('offers no option that has already been played', () => {
+    const used = ['pa-karaoke', 'pa-encore', 'pa-crush', 'pa-bill']
+    for (let seed = 0; seed < 200; seed++) {
+      const { optionIds } = buildRound(makeRng(seed), used, 'party')
+      for (const id of optionIds) assert.ok(!used.includes(id), `seed ${seed} offered ${id} again`)
+    }
+  })
+
+  it('still fills four distinct buttons when almost everything has been played', () => {
+    const used = PROMPTS.slice(2).map((p) => p.id)
+    const { optionIds } = buildRound(makeRng(3), used)
+    assert.equal(optionIds.length, 4)
+    assert.equal(new Set(optionIds).size, 4)
+  })
+
   // Falling back is the point: a theme must not be able to stall a round once
   // its pack has been used up.
   it('falls back to the whole library when the featured pack is exhausted', () => {

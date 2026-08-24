@@ -127,14 +127,28 @@ export function buildRound(
 
   const answer = pool[Math.floor(rng() * pool.length)]
 
-  const siblings = BY_PACK[answer.pack].filter((p) => p.id !== answer.id)
-  const decoys = shuffle(siblings, rng).slice(0, 3)
-
-  // Tiny packs would starve the option list — top up from anywhere.
-  while (decoys.length < 3) {
-    const filler = PROMPTS[Math.floor(rng() * PROMPTS.length)]
-    if (filler.id !== answer.id && decoys.every((d) => d.id !== filler.id)) decoys.push(filler)
+  // Every option is a candidate answer, because the actor chooses which of the
+  // four to mime — so `avoidIds` has to bar decoys too, not just the nominated
+  // answer. Leaving them unfiltered let a prompt already played this match come
+  // back as a decoy, get picked, and be performed a second and third time.
+  //
+  // Same pack first, since same-pack decoys are what make a round hard. Then
+  // anything else still fresh, and only if the library cannot fill four buttons
+  // at all, something already seen.
+  const taken = new Set<string>([answer.id])
+  const decoys: Prompt[] = []
+  const drawFrom = (candidates: Prompt[]): void => {
+    for (const p of shuffle(candidates, rng)) {
+      if (decoys.length >= 3) return
+      if (taken.has(p.id)) continue
+      taken.add(p.id)
+      decoys.push(p)
+    }
   }
+
+  drawFrom(BY_PACK[answer.pack].filter((p) => avoidIds.indexOf(p.id) === -1))
+  if (decoys.length < 3) drawFrom(fresh)
+  if (decoys.length < 3) drawFrom(PROMPTS)
 
   const options = shuffle([answer, ...decoys], rng)
   return { answerId: answer.id, optionIds: options.map((p) => p.id) }
