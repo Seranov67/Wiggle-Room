@@ -136,18 +136,32 @@ export function roster(): RosterEntry[] {
   if (rosterCache !== null) return rosterCache
 
   const present = presentUserIds()
-  const seen = new Set<string>()
-  const out: RosterEntry[] = []
+  /** userId -> the entry we are keeping, and how far along its data is. */
+  const best = new Map<string, { entry: RosterEntry; roundIndex: number }>()
 
   for (const [entity, w] of engine.getEntitiesWith(Wiggler)) {
     const id = w.userId.toLowerCase()
-    if (id === '' || !present.has(id) || seen.has(id)) continue
-    seen.add(id)
+    if (id === '' || !present.has(id)) continue
+
     const name = w.name || 'Anon'
     if (name !== 'Anon') knownNames.set(id, name)
-    out.push({ entity, userId: w.userId, name })
+
+    // A player who leaves and comes back has two `Wiggler` entities: the one
+    // they left behind — synced state outlives the client that wrote it — and
+    // the one their new session made. Taking whichever the engine happened to
+    // list first picked the corpse about as often as the player, and a round
+    // then cannot see their pick or their guess at all.
+    //
+    // `roundIndex` settles it without a protocol change: the entity that has
+    // been written for the newest round is the live one. A returning player is
+    // still on the stale entity until they touch something, which is correct —
+    // until they do, they have not picked or guessed.
+    const held = best.get(id)
+    if (held !== undefined && held.roundIndex >= w.roundIndex) continue
+    best.set(id, { entry: { entity, userId: w.userId, name }, roundIndex: w.roundIndex })
   }
 
+  const out = [...best.values()].map((held) => held.entry)
   out.sort((a, b) => (a.userId.toLowerCase() < b.userId.toLowerCase() ? -1 : 1))
 
   rosterCache = out
