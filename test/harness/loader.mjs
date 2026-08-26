@@ -23,7 +23,8 @@ const HERE = new URL('./', import.meta.url)
 const FAKES = {
   '@dcl/sdk/ecs': 'sdk-ecs.ts',
   '@dcl/sdk/network': 'sdk-network.ts',
-  '@dcl/sdk/players': 'sdk-players.ts'
+  '@dcl/sdk/players': 'sdk-players.ts',
+  '~system/RestrictedActions': 'sdk-restricted.ts'
 }
 
 const tagOf = (href) => (href ? new URL(href).searchParams.get('w') : null)
@@ -33,7 +34,7 @@ registerHooks({
     const fake = FAKES[specifier]
     if (fake) return { url: new URL(fake, HERE).href, shortCircuit: true }
 
-    if (specifier.startsWith('@dcl/')) {
+    if (specifier.startsWith('@dcl/') || specifier.startsWith('~system/')) {
       throw new Error(
         `The test harness has no stand-in for "${specifier}". Add one in test/harness/ ` +
           `and register it in loader.mjs, or keep it out of the modules under test.`

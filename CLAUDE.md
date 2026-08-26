@@ -93,6 +93,19 @@ synced `Match`, so it cannot disturb a real match forming around it, and it exit
 moment one starts. It exists because juries test submissions individually — a lone
 visitor seeing "1 more player to start" is the worst possible first impression.
 
+**An emote costs no protocol version.** `triggerEmote` fires on the local avatar and
+every other client sees it over Decentraland's own avatar channel — none of it touches
+`Match` or `Wiggler`. That is the whole reason the audience reactions (`REACTION_EMOTES`)
+could be added inside a judging window: no synced field, so no `PROTOCOL_VERSION` bump,
+so no risk of resetting a live match. It is also the line that decides what may still be
+added cheaply. Anything expressible as *an avatar moving* is free; the moment it has to
+be **counted** — applause worth points, say — it needs a synced field and inherits every
+constraint in the section above.
+
+Reaction ids are validated against `EMOTES` at load, because `triggerEmote` takes a plain
+string and resolves whether or not the emote exists: a typo is invisible until somebody
+watches an avatar fail to move.
+
 **The roster is built once a frame and cached.** It costs two entity scans, two sets
 and a sort, and it is read about a dozen times a frame — five inside `hostTick`, once
 per scoreboard row in the UI. `invalidateRoster()` runs from `gameSystem`

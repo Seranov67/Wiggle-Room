@@ -36,6 +36,18 @@ export const SCORING = {
   streakMultipliers: [1, 1.25, 1.5]
 } as const
 
+/**
+ * The audience's own emotes during a performance.
+ *
+ * Reactions ride the platform's avatar channel, not our synced components, so
+ * they cost no `PROTOCOL_VERSION` — but a mashed button restarts the animation
+ * every frame, which reads as a twitch rather than a reaction and makes a busy
+ * room strobe. Hence a gate roughly the length of a short emote.
+ */
+export const REACTIONS = {
+  cooldownMs: 1_200
+} as const
+
 export const RULES = {
   /** Below this the scene stays in the lobby, where a lone visitor can run the solo demo. */
   minPlayers: 2,

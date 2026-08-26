@@ -1,4 +1,5 @@
 import { triggerEmote } from '~system/RestrictedActions'
+import { REACTIONS } from '../config'
 
 /**
  * The base emote set every Decentraland avatar owns — no wearables required,
@@ -54,4 +55,47 @@ export function playEmote(id: string): void {
   triggerEmote({ predefinedEmote: id }).catch((err) => {
     console.log('[wiggle] emote failed', id, err)
   })
+}
+
+/**
+ * What the audience may fire while somebody is performing.
+ *
+ * Four, not twenty. Every one of these is also a legal miming emote, so the
+ * standing risk is a reaction being read as the performance — and the guard
+ * against that is picking gestures that read unmistakably as an audience
+ * enjoying itself, drawn from the corner of the set the prompt library leans
+ * on least. `shrug` and `headexplode` are the two most-suggested emotes in the
+ * whole library, which is precisely why neither is here.
+ *
+ * The labels are written for a reaction rather than reused from the wheel —
+ * "Cheer" is what you are doing, "Hands" is what the mime is called — but the
+ * ids are checked against `EMOTES` at load, because a misspelling here would
+ * fail exactly as silently as a missing permission does.
+ */
+export const REACTION_EMOTES: Emote[] = (
+  [
+    ['clap', 'Clap'],
+    ['handsair', 'Cheer'],
+    ['disco', 'Dance'],
+    ['dab', 'Nice']
+  ] as const
+).map(([id, label]) => {
+  if (!EMOTES.some((e) => e.id === id)) throw new Error(`[wiggle] reaction "${id}" is not in the emote set`)
+  return { id, label }
+})
+
+let lastReactionAt = -Infinity
+
+/**
+ * Fire a reaction, unless the last one is still playing.
+ *
+ * Returns whether it went out, which is only of interest to a test — the
+ * player gets no error for pressing early, they simply see the emote they
+ * already started still running.
+ */
+export function playReaction(id: string, nowMs: number = Date.now()): boolean {
+  if (nowMs - lastReactionAt < REACTIONS.cooldownMs) return false
+  lastReactionAt = nowMs
+  playEmote(id)
+  return true
 }

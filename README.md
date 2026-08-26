@@ -18,13 +18,19 @@ Built with Decentraland SDK7, mobile-first.
 | **Lobby** | — | Waiting for a second player. Alone? Play a round solo to see how it works. |
 | **Starting** | 8s | Enough players joined. Everyone gets ready. |
 | **Pick** | 12s | The actor sees 4 prompts and picks one — and steps onto the pink stage. |
-| **Act** | 45s | The actor mimes it. Guessers lock in one of the same 4 options, whenever they're ready. |
+| **Act** | 45s | The actor mimes it. Guessers lock in one of the same 4 options, then cheer, clap or dance along with their own avatar. |
 | **Reveal** | 9s | The answer, who voted for what, and the points. |
 | **Intermission** | 4s | Breather. The stage passes to the next player. |
 
 Eight rounds make a match, then the final scoreboard and a fresh start. Everyone takes a
 turn on stage — the actor rotates through the room in a fixed order, so nobody spectates
 all night.
+
+**The audience is not a spectator.** Locking an answer used to end your round: one tap,
+then up to forty seconds of watching. Now committing your guess hands you a row of
+reactions instead — clap, cheer, dance, nice — that play on your own avatar for the whole
+room to see. They cost nothing to run: emotes travel on Decentraland's own avatar
+channel, so nothing about them crosses this scene's network state.
 
 **A different theme every day.** One of the four prompt packs is featured each day, and
 the match-end screen tells you which one is up tomorrow. The rotation is keyed to the UTC

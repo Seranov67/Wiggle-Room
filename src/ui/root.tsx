@@ -29,7 +29,7 @@ import {
   startDemo
 } from '../game/machine'
 import { PACK_NAMES, packForDay, PROMPTS_BY_ID } from '../game/prompts'
-import { EMOTES, playEmote } from '../game/emotes'
+import { EMOTES, playEmote, playReaction, REACTION_EMOTES } from '../game/emotes'
 import { myUserId, nameFor, networkReady, roster } from '../game/net'
 import { ranked, findScore } from '../game/scoreboard'
 import { RULES } from '../config'
@@ -310,11 +310,13 @@ function GuessScreen() {
         color={locked ? C.mint : C.dim}
       />
       <TimerBar remaining01={phaseRemaining01()} color={locked ? C.mint : C.hot} />
-      {/* Once the answer is locked it cannot be changed, so the buttons have
-          nothing left to do — and this is exactly the moment the guesser should
-          be watching the performance. They go away and the screen clears. */}
+      {/* Once the answer is locked it cannot be changed, so the option buttons
+          have nothing left to do — and this is exactly the moment the guesser
+          should be watching. What replaces them is deliberately not another
+          decision: it is the only thing an audience actually wants to do while
+          somebody performs, which is answer them. */}
       {locked ? (
-        <Caption text={`watch ${nameOf(m.actorId)} finish`} />
+        <ReactionRow actorName={nameOf(m.actorId)} />
       ) : (
         <OptionGrid
           ids={optionIds()}
@@ -442,6 +444,61 @@ function EmoteWheel(props: { suggestIds?: string[] } = {}) {
           </UiEntity>
         )
       })}
+    </UiEntity>
+  )
+}
+
+/**
+ * What the audience does with the rest of the performance.
+ *
+ * A guesser used to lock an answer and then have nothing to do for up to forty
+ * seconds — one tap per round was the whole of their input. These fire on your
+ * own avatar and travel on the platform's avatar channel, so the room sees you
+ * without a byte of our own state crossing the network.
+ *
+ * Four narrow tiles, at the wheel's height rather than a button's: this is a
+ * thing you press from a resting hand while watching somebody else, and every
+ * pixel it gives back is a pixel the performance keeps.
+ */
+function ReactionRow(props: { actorName: string }) {
+  const tileHeight = Math.round(tapHeight() * 0.72)
+  return (
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
+      <Caption text={`watch ${props.actorName} finish — or say something back`} />
+      <UiEntity
+        uiTransform={{
+          width: '100%',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          margin: { top: px(4) }
+        }}
+      >
+        {REACTION_EMOTES.map((e) => (
+          <UiEntity
+            key={e.id}
+            uiTransform={{
+              width: '23.5%',
+              height: tileHeight,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: px(12),
+              borderWidth: px(1),
+              borderColor: C.line,
+              pointerFilter: 'block'
+            }}
+            uiBackground={{ color: C.clear }}
+            onMouseDown={() => playReaction(e.id)}
+          >
+            <Label
+              value={e.label}
+              fontSize={fs(15)}
+              color={C.text}
+              textAlign="middle-center"
+              uiTransform={{ width: '100%', height: '100%' }}
+            />
+          </UiEntity>
+        ))}
+      </UiEntity>
     </UiEntity>
   )
 }
