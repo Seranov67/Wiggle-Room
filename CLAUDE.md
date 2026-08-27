@@ -79,6 +79,14 @@ a style preference: adopting bumps `phaseToken`, and during the second or two wh
 clients each believe they are elected, election-based handover resets everyone's
 countdown every frame and the phase stops advancing entirely.
 
+**But the outgoing host is off its own ballot** (`isElectedExcluding` in `net.ts`). The
+election's only input is presence, and a client whose scene died leaves an avatar
+standing — so with the lowest userId it keeps winning its own succession. `takeOverFrom`
+would permit the handover and the next line would refuse it, forever. That is a liveness
+failure, not a slow round: the room freezes in whatever phase it was in and no player can
+wait it out. Tests hold the line in all five advancing phases; reverting that one call to
+`isHost()` hangs every one of them, which is the shape the bug had in the wild.
+
 **The lobby is a legitimate resting state.** It has no duration and never bumps
 `phaseToken`, so a frozen token proves nothing about liveness. Two places had to learn
 this (`reconcileProtocol`, `takeOverFrom`) — do not add a third that treats a quiet lobby

@@ -6,7 +6,17 @@ import { ARENA, DEMO, RULES, SCORING, TIMING, PROTOCOL_VERSION } from '../config
 import { ensureScore, parseScores, serialiseScores } from './scoreboard'
 import type { ScoreRow } from './scoreboard'
 import { speedBonus, streakMultiplier } from './scoring'
-import { findWiggler, getMatchEntity, getSelfEntity, isHost, isPresent, myUserId, networkReady, roster } from './net'
+import {
+  findWiggler,
+  getMatchEntity,
+  getSelfEntity,
+  isElectedExcluding,
+  isHost,
+  isPresent,
+  myUserId,
+  networkReady,
+  roster
+} from './net'
 
 /**
  * The match state machine.
@@ -114,7 +124,12 @@ export function hostTick(dtSeconds: number): void {
   // clients end up trading the match back and forth.
   if (m.hostId === '' || m.hostId.toLowerCase() !== myUserId().toLowerCase()) {
     if (!takeOverFrom(m.hostId, m.phaseToken, m.phaseDurationMs, dtSeconds)) return
-    if (!isHost()) return
+    // Elect the successor without the outgoing host on the ballot. When they
+    // have left the room this is exactly `isHost()`, because they are not in
+    // the roster to be skipped; when their scene died behind a still-standing
+    // avatar it is the difference between handing the match on and never being
+    // able to, since presence alone would keep electing the corpse.
+    if (!isElectedExcluding(m.hostId)) return
 
     // Adopt, and restart the current phase clock rather than inheriting an
     // unknown amount of elapsed time.

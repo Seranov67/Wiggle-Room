@@ -183,15 +183,42 @@ export function nameFor(userId: string): string | null {
   return knownNames.get(userId.toLowerCase()) ?? null
 }
 
+/**
+ * Lowest userId present, skipping `exceptUserId`. Returns '' when nobody is
+ * left to elect.
+ *
+ * The exclusion is what lets a match be taken off a host whose scene has died
+ * behind a standing avatar. Presence is the election's only input, and a corpse
+ * is present — so with the lowest userId it wins its own succession and the
+ * room can never move on. Leaving it on the ballot made the whole idea of
+ * relieving a stalled host unreachable: the takeover was permitted and then
+ * refused one line later.
+ */
+export function electedHost(exceptUserId = ''): string {
+  const skip = exceptUserId.toLowerCase()
+  for (const entry of roster()) {
+    if (entry.userId.toLowerCase() !== skip) return entry.userId
+  }
+  return ''
+}
+
 /** Lowest userId present. Returns '' when the roster is not usable yet. */
 export function hostId(): string {
-  const list = roster()
-  return list.length > 0 ? list[0].userId : ''
+  return electedHost()
 }
 
 export function isHost(): boolean {
+  return isElectedExcluding('')
+}
+
+/**
+ * Are we the client that should claim a match currently attributed to
+ * `exceptUserId`? Identical to `isHost()` whenever that client is already gone
+ * from the roster, which is the ordinary handover case.
+ */
+export function isElectedExcluding(exceptUserId: string): boolean {
   const me = myUserId()
-  return me !== '' && hostId().toLowerCase() === me.toLowerCase()
+  return me !== '' && electedHost(exceptUserId).toLowerCase() === me.toLowerCase()
 }
 
 export function findWiggler(userId: string): RosterEntry | null {

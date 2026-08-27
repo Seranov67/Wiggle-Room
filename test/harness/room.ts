@@ -63,6 +63,8 @@ export function createRoom() {
 
   const clients: Client[] = []
   const names = new Map<string, string>()
+  /** Clients whose scene has stopped running while their avatar stays in the room. */
+  const frozen = new Set<string>()
 
   const find = (userId: string): Client => {
     const c = clients.find((x) => x.userId.toLowerCase() === userId.toLowerCase())
@@ -111,9 +113,37 @@ export function createRoom() {
       world.join(userId, names.get(userId.toLowerCase()) ?? 'Anon')
     },
 
+    /**
+     * The client stops running but its avatar stays put — a scene that died
+     * behind a player who is still, as far as everyone else can see, right
+     * here. This is the case `HOST_STALL_GRACE_MS` exists for, and the one
+     * `isPresent` cannot detect on its own.
+     */
+    freeze(userId: string): void {
+      frozen.add(userId.toLowerCase())
+    },
+
+    thaw(userId: string): void {
+      frozen.delete(userId.toLowerCase())
+    },
+
+    /**
+     * Rewrite the match as a different build of the scene would have left it.
+     * Nothing else can produce this state: our clients only ever write their
+     * own `PROTOCOL_VERSION`.
+     */
+    forceProtocol(protocol: number, hostId?: string): void {
+      if (clients.length === 0) throw new Error('no clients to reach the match through')
+      const m = Match.getMutable(clients[0].net.getMatchEntity()) as Record<string, unknown>
+      m.protocol = protocol
+      if (hostId !== undefined) m.hostId = hostId
+    },
+
     /** One frame for every client still running. */
     tick(dtSeconds: number): void {
-      for (const client of [...clients]) client.tick(dtSeconds)
+      for (const client of [...clients]) {
+        if (!frozen.has(client.userId.toLowerCase())) client.tick(dtSeconds)
+      }
     },
 
     /** Run `ms` of wall time in `stepMs` frames. */
@@ -162,6 +192,15 @@ export function createRoom() {
 
     hostId(): string {
       return (room.match()?.hostId as string) ?? ''
+    },
+
+    protocol(): number {
+      return (room.match()?.protocol as number) ?? -1
+    },
+
+    /** Bumped on every phase entry; a frozen token means nothing is advancing. */
+    phaseToken(): number {
+      return (room.match()?.phaseToken as number) ?? -1
     },
 
     options(): string[] {
