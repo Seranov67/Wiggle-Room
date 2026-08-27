@@ -19,7 +19,7 @@ missing, reinstall with `npx skills add decentraland/sdk-skills --all`. `deploy-
 
 ```bash
 npm run build          # bundle + type check
-npm test               # 62 unit tests, node:test with type stripping
+npm test               # 83 unit tests, node:test with type stripping
 npm run start          # local preview
 npm run start -- --mobile           # preview + QR for a phone on the same network
 npm run start -- --multi-instance   # several Explorers at once, for multiplayer testing
@@ -44,6 +44,16 @@ by frame; its `tick` mirrors `gameSystem` in `index.ts`, and a test asserts it s
 
 Anything the fake does not implement fails loudly at resolve time rather than silently, so
 adding an SDK call to `src/game/` may mean adding one to `test/harness/`.
+
+`room.ts` can also produce the states no ordinary play reaches. `disconnect` takes a
+player out for good; `flicker`/`restore` open a roster gap and close it, for the grace
+window; `freeze` stops a client running while its avatar stays present, which is the only
+way to reach the stalled-host path; and `forceProtocol` writes the match as a different
+build of the scene would have left it. **Liveness is asserted on `phaseToken`, never on a
+phase name** — the host bumps it on every phase entry, so a token that stops moving is a
+room that has stopped, whatever it says on screen. Those tests state the property rather
+than the mechanism, so they survive the election being rewritten; a fix in this area is
+only believed once reverting it hangs them.
 
 Two limits worth knowing. Sync is instant and lossless here, so this proves decisions, not
 transport — a roster gap is simulated by removing a player, which is the part that
@@ -175,6 +185,31 @@ rights to — which the CLI documentation does not make obvious.
 
 **`npm run deploy:world` exists for a reason.** Passing `--target-content` as a flag
 loses the argument under PowerShell and the deploy then refuses to run.
+
+**`npm run build` is a check, not the artifact.** Plain `sdk-commands build` embeds an
+inline sourcemap: 6.7 MB against 610 KB for `--production`. Creator Hub builds production
+when it publishes, so what reaches the World is fine — but a CLI deploy of an unflagged
+build would ship eleven times the payload for a scene whose entire argument is that there
+is nothing to download.
+
+**Check what is actually live, every publish.** A deploy once left the World a commit
+behind with nobody the wiser, and the gap happened to contain a room-freezing bug. It is
+verifiable in a minute and worth doing every time:
+
+```bash
+curl -s https://worlds-content-server.decentraland.org/world/castlerock.dcl.eth/about
+```
+
+`configurations.scenesUrn` names the deployed scene entity; fetching that hash from
+`/contents/` gives its file list, and fetching the `bin/index.js` hash gives the live
+bundle, which should match a local `--production` build byte for byte. `about` also
+reports `synchronizationStatus`, but it says `Syncing` even when the scene serves
+perfectly — do not read anything into it.
+
+**A World has once served an empty parcel** shortly after publishing: the scene's name
+resolved, so its metadata had arrived, but no arena and no UI rendered. Minutes later the
+same entity worked, with nothing changed on either side — so it was transient, not a bad
+build, and the cause is still unknown. Never publish just before somebody is due to look.
 
 **Never bump `PROTOCOL_VERSION` casually.** A newer client entering a room resets a
 running old-build match, scoreboard included. Never do it inside a demo or judging

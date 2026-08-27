@@ -134,6 +134,13 @@ a match restarts the phase for everyone, they would reset the countdown every fr
 between them. A host that has actually gone is relieved immediately; one that is still
 here but has plainly stopped advancing is relieved after a generous grace.
 
+That second case has a catch worth naming, because getting it wrong cost the room
+everything. Presence is the election's only input, and a client whose scene dies leaves
+its avatar standing — so a stalled host with the lowest userId went on winning its own
+succession, and the room froze permanently. The successor is therefore elected with the
+outgoing host struck off the ballot. Where they have genuinely left this changes nothing,
+since they are not in the roster to strike off.
+
 **Two synced components** ([`src/game/components.ts`](src/game/components.ts)):
 
 - `Match` — phase, actor, options, answer, scores. Written **only** by the host, so there
@@ -166,12 +173,17 @@ src/
     prompts.ts        42 prompts in 4 packs + deterministic RNG
     scoring.ts        streak and speed-bonus curves, import-free so tests can load them
     scoreboard.ts     scoreboard serialisation
-    emotes.ts         20 emotes — 16 expressive, 4 that mime an action
+    emotes.ts         20 emotes — 16 expressive, 4 that mime an action; 4 double as
+                      audience reactions
   scene/arena.ts      stage, seating, status backdrop, actor spotlight
   ui/                 bottom sheet, widgets, theme
-test/
+test/                 83 tests
   harness/            a fake SDK and a room of simulated clients
   machine.test.ts     matches played out frame by frame, including badly
+  prompts.test.ts     round building, the daily pack, the seeded RNG
+  emotes.test.ts      the reaction set and its cooldown
+  scoring.test.ts     streak and speed-bonus curves
+  scoreboard.test.ts  serialisation that survives a malformed row
 ```
 
 `test/` sits outside the tsconfig `include` and imports source with explicit `.ts`
@@ -214,8 +226,12 @@ decisions.
 | Host leaves mid-match (handover) | 🧪 |
 | Two-player room: actor leaves → void → lobby | 🧪 |
 | Reconnect after backgrounding the app | 🧪 |
+| Host's client freezes, avatar stays standing | 🧪 |
+| Room left holding another build's match | 🧪 |
+| Audience reactions read as reactions | ☐ |
 
-✅ verified on a device · 🧪 covered by the simulated-room tests, not yet on a device
+✅ verified on a device · 🧪 covered by the simulated-room tests, not yet on a device ·
+☐ not covered anywhere
 
 The core loop is verified end to end with two players on separate accounts.
 
@@ -223,7 +239,7 @@ Everything about somebody *leaving* is verified a rung lower down, because repro
 by hand needs several accounts and a stopwatch: `test/harness/` runs the real state
 machine against a fake SDK, several simulated clients to a shared world, and drives it
 frame by frame. That is a claim about the game's decisions, not about the network — sync
-there is instant and lossless. It found two faults that had survived every play session:
+there is instant and lossless. It found three faults that had survived every play session:
 
 - **The same prompt could be the answer three rounds running.** `buildRound` nominates an
   answer, but the actor mimes whichever of the four options they choose, so the round was
@@ -231,6 +247,16 @@ there is instant and lossless. It found two faults that had survived every play 
 - **A player who left and rejoined could not score.** They are in the engine twice — the
   entity they abandoned and the one their new session made — and the roster was picking
   whichever came first, which was often the abandoned one.
+- **A host whose client froze could stop the room for good.** The election reads presence,
+  and an avatar left standing is present, so a stalled host with the lowest userId kept
+  winning its own succession. The takeover was permitted and then refused one line later,
+  every frame. This was the only fault of the three that outlived the round it happened in
+  — the room froze in whatever phase it was in and no player could wait it out.
+
+That last one is why liveness is asserted on `phaseToken`, the counter the host bumps on
+every phase entry, rather than on any particular screen: a token that stops moving is a
+room that has stopped. Those tests cover a host dying in each of the five advancing
+phases, and a match still reaching its final scoreboard with a frozen player in the room.
 
 ## Tech
 
