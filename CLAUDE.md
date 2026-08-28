@@ -297,6 +297,43 @@ both, byte for byte. So `scene.json` is the one that matters; treat `SCENE_READM
 editor state that happens to be committed, and keep the two in step by hand if you edit
 the panel through the Hub.
 
+## What the Buildathon is actually asking for
+
+Friendzone Mobile Buildathon, organised by DCL Regenesis Labs. Submissions close
+**4 September 2026**, judging runs **5–11 September**, winners announced **13 September**.
+The scene must stay publicly reachable for all of it — and the World is not ours, so that
+availability is somebody else's to keep. Confirm it holds, do not assume it.
+
+The requirements this scene has to keep meeting:
+
+- deployed to a Decentraland World and publicly reachable throughout judging
+- meaningful social interaction, not a single-player experience in a shared room
+- **runs standing alone** — no scheduled event, no host, performer or moderator
+- **designed and tested for mobile**, touch controls and small screens
+- open source in a public GitHub repo
+- submitted through DoraHacks before the deadline
+
+Two details in the brief change how the work is ordered.
+
+**Mobile is the test environment, not a criterion among others.** Every eligible project is
+tested directly in the Decentraland mobile app. A change that has only been seen on a
+desktop has not been seen.
+
+**The first fifty valid submissions get a merch voucher**, and DoraHacks entries can be
+edited afterwards. So filing early costs nothing and is worth doing before the work is
+finished, rather than on the deadline.
+
+Judging weighs mobile experience, social value, mobile UX, performance, originality,
+retention, and overall execution — explicitly favouring a polished simple experience over
+a technically complex one. Where this scene is strong: mobile-first by construction, a
+610 KB payload with no GLB to download, and it needs nobody to run it. Where it is
+weakest: **retention** — the daily pack rotation is the only reason to come back.
+
+That weakness is a storytelling problem, not a build one. A persistent leaderboard would
+serve it, and the brief even links a sample, but it needs an authoritative Multiplayer
+Server — a new architecture that would also cost the "no server, nothing to download"
+argument currently earning marks on performance. Lead with the daily rotation instead.
+
 ## Writing about this project
 
 Submission copy and docs must avoid the word "host" in the human sense — the Buildathon
