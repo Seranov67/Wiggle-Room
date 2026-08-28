@@ -168,6 +168,21 @@ same component serves the guess screen, both pick screens and the reveal.
 is exactly the moment the guesser should be watching rather than reading. The screen
 drops from 66% of the height to 17%.
 
+**A two-player round has no spare moment in it.** `everyoneGuessed` resolves the round as
+soon as every guesser has answered, and a two-player room has exactly one guesser — so
+the act phase's post-lock window lasts zero seconds there. The audience reactions were
+built for that window and were, at the minimum player count the game advertises,
+unreachable. Nothing was broken: both behaviours are right on their own, and the tests
+covered each of them separately and passed. Only a recording showed the gap. Anything
+that lives *after* a guess must therefore earn its place on the reveal, which is the one
+screen every player reaches at every player count.
+
+**The reveal's grid gives way rather than being joined.** It carries the answer and the
+vote counts, which is a few seconds of reading; after that it is two thirds of the height
+doing nothing — the same argument that removed the guess buttons on lock. So reactions
+replace it for the back half of the reveal (`REACTIONS.revealReadMs`) instead of being
+stacked under it, and the screen never grows.
+
 **Say who, not how many.** The reveal names the player who read you; the intermission
 names who is on next. `readersOf` exists for this. A count is a report, a name is an
 event, and they cost the same to render.

@@ -32,7 +32,7 @@ import { PACK_NAMES, packForDay, PROMPTS_BY_ID } from '../game/prompts'
 import { EMOTES, playEmote, playReaction, REACTION_EMOTES } from '../game/emotes'
 import { myUserId, nameFor, networkReady, roster } from '../game/net'
 import { ranked, findScore } from '../game/scoreboard'
-import { RULES } from '../config'
+import { REACTIONS, RULES, TIMING } from '../config'
 
 export function setupUi(): void {
   // 'none' because the tree already wraps itself in ScreenInsetArea. Since 7.26
@@ -316,7 +316,7 @@ function GuessScreen() {
           decision: it is the only thing an audience actually wants to do while
           somebody performs, which is answer them. */}
       {locked ? (
-        <ReactionRow actorName={nameOf(m.actorId)} />
+        <ReactionRow hint={`watch ${nameOf(m.actorId)} finish — or say something back`} />
       ) : (
         <OptionGrid
           ids={optionIds()}
@@ -354,17 +354,27 @@ function RevealScreen() {
     <Card>
       <Title text={answer?.text ?? m.answerId} color={C.mint} />
       <Caption text={revealLine(m.actorId, m.roundIndex, m.answerId, gained)} color={revealColour(guessedRight)} />
-      <OptionGrid
-        ids={optionIds()}
-        toneFor={(id) => {
-          if (id === m.answerId) return 'correct'
-          if (!amActor() && myGuess(m.roundIndex) === id) return 'wrong'
-          return 'muted'
-        }}
-        badgeFor={(id) => ((votes[id] ?? 0) > 0 ? `${votes[id]}` : undefined)}
-        disabled
-        onPick={() => {}}
-      />
+      {/* The grid carries the answer and the vote counts, which is a few
+          seconds of reading; after that it is two thirds of the height doing
+          nothing, exactly as the guess screen's buttons were. So it gives way
+          rather than being joined — and in a two-player room this is the only
+          place reactions can live at all, because a round ends the instant its
+          single guesser commits and the act phase never has a spare moment. */}
+      {secondsLeft() * 1000 <= TIMING.revealMs - REACTIONS.revealReadMs ? (
+        <ReactionRow hint="say something back" />
+      ) : (
+        <OptionGrid
+          ids={optionIds()}
+          toneFor={(id) => {
+            if (id === m.answerId) return 'correct'
+            if (!amActor() && myGuess(m.roundIndex) === id) return 'wrong'
+            return 'muted'
+          }}
+          badgeFor={(id) => ((votes[id] ?? 0) > 0 ? `${votes[id]}` : undefined)}
+          disabled
+          onPick={() => {}}
+        />
+      )}
       <ScoreStrip />
     </Card>
   )
@@ -460,11 +470,11 @@ function EmoteWheel(props: { suggestIds?: string[] } = {}) {
  * thing you press from a resting hand while watching somebody else, and every
  * pixel it gives back is a pixel the performance keeps.
  */
-function ReactionRow(props: { actorName: string }) {
+function ReactionRow(props: { hint: string }) {
   const tileHeight = Math.round(tapHeight() * 0.72)
   return (
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
-      <Caption text={`watch ${props.actorName} finish — or say something back`} />
+      <Caption text={props.hint} />
       <UiEntity
         uiTransform={{
           width: '100%',

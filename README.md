@@ -27,10 +27,12 @@ turn on stage — the actor rotates through the room in a fixed order, so nobody
 all night.
 
 **The audience is not a spectator.** Locking an answer used to end your round: one tap,
-then up to forty seconds of watching. Now committing your guess hands you a row of
-reactions instead — clap, cheer, dance, nice — that play on your own avatar for the whole
-room to see. They cost nothing to run: emotes travel on Decentraland's own avatar
-channel, so nothing about them crosses this scene's network state.
+then watching. Now you get a row of reactions instead — clap, cheer, dance, nice — that
+play on your own avatar for the whole room to see. They appear once your guess is in, and
+again on the reveal in place of the answer grid once it has been read, so they are there
+whether the room holds two players or eight. They cost nothing to run: emotes travel on
+Decentraland's own avatar channel, so nothing about them crosses this scene's network
+state.
 
 **A different theme every day.** One of the four prompt packs is featured each day, and
 the match-end screen tells you which one is up tomorrow. The rotation is keyed to the UTC
@@ -218,8 +220,10 @@ decisions.
 | Actor visible while performing | ✅ after moving the spotlight to the floor |
 | Sheet clears the client’s own buttons | ✅ |
 | Frame rate while moving | 38–52 fps on the phone, no stutter on desktop |
-| Full eight-round match to the final scoreboard | 🧪 |
-| Actor rotates every round | 🧪 |
+| Full eight-round match to the final scoreboard | ✅ |
+| Actor rotates every round | ✅ |
+| No prompt repeats across a match | ✅ nine distinct answers in a row |
+| Emote suggestions match the prompt | ✅ |
 | Actor disconnects during Pick | 🧪 |
 | Actor disconnects during Act | 🧪 |
 | Guesser disconnects mid-round | 🧪 |
@@ -229,6 +233,7 @@ decisions.
 | Host's client freezes, avatar stays standing | 🧪 |
 | Room left holding another build's match | 🧪 |
 | Audience reactions read as reactions | ☐ |
+| Reaction row on a landscape phone | ☐ |
 
 ✅ verified on a device · 🧪 covered by the simulated-room tests, not yet on a device ·
 ☐ not covered anywhere

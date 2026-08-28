@@ -45,7 +45,15 @@ export const SCORING = {
  * room strobe. Hence a gate roughly the length of a short emote.
  */
 export const REACTIONS = {
-  cooldownMs: 1_200
+  cooldownMs: 1_200,
+  /**
+   * How long the reveal keeps showing the answer before the grid gives way to
+   * reactions. The grid has done its job once it has been read, and in a
+   * two-player room this is the *only* moment reactions can appear at all: the
+   * round ends the instant the single guesser commits, so the act phase never
+   * has a spare second in it.
+   */
+  revealReadMs: 4_000
 } as const
 
 export const RULES = {
